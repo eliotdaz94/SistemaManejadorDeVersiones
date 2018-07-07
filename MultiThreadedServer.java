@@ -64,13 +64,15 @@ public class MultiThreadedServer extends Thread {
 	private int port;
 	private ServerSocket socket;
 	private boolean isRunning;
-	private HashMap<InetAddress, ServerInformation> metadata;
+	private HashMap<String, ArrayList<FileVersion>> storedFiles;
+	private HashMap<InetAddress, Long> serverBytes;
 
 	public MultiThreadedServer(int port){
 		try {
 			this.port = port;
-			socket = new ServerSocket(port);
-			isRunning = true;
+			this.socket = new ServerSocket(port);
+			this.isRunning = true;
+			this.storedFiles = new HashMap<String, ArrayList<FileVersion>>();
 		} 
 		catch (IOException ioe) {
 			System.out.println();
@@ -115,6 +117,56 @@ class ServerTest {
 	}
 }
 
+class FileVersion {
+
+	private Timestamp timestamp;
+	private ArrayList<InetAddress> replicas;
+	private long filesize;
+	private InetAddress client;
+
+	public FileVersion(long filesize, InetAddress client) {
+		this.timestamp = new Timestamp(System.currentTimeMillis());
+		this.replicas = new ArrayList<InetAddress>();
+		this.filesize = filesize;
+		this.client = client;
+	}
+
+	public ArrayList<InetAddress> getReplicas() { return this.replicas; }
+
+	public void setTimestamp() { this.timestamp = new Timestamp(System.currentTimeMillis()); }
+
+	public void setFilesize(long filesize) { this.filesize = filesize; }
+
+	public void addIP(InetAddress ip) {
+		if (!this.replicas.contains(ip)) {
+			this.replicas.add(ip);
+		}
+	}
+	
+	public boolean searchIP(InetAddress ip) { 
+		if (this.replicas.contains(ip)) {
+			return true;
+		}
+		else {
+			return false;
+		}
+	}
+
+/*
+	public int removeIP(InetAddress ip) {
+		if (this.replicas.contains(ip)) {
+			this.replicas.remove(ip);
+			return 0;
+		}
+		else {
+			return 1;
+		}
+	}
+*/
+
+}
+
+/*
 class ServerInformation {
 	
 	private ArrayList<FileInformation> filesInfo;
@@ -148,3 +200,4 @@ class FileInformation {
 
 	public void setVersion(Timestamp version) { this.version = version; }
 }
+*/
