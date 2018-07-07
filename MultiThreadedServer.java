@@ -4,6 +4,10 @@ import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.io.ObjectInputStream;
 import java.lang.ClassNotFoundException;
+import java.util.HashMap;
+import java.util.ArrayList;
+import java.net.InetAddress;
+import java.sql.Timestamp;
 
 class ServerWorker extends Thread {
 	
@@ -28,9 +32,12 @@ class ServerWorker extends Thread {
 	public void run() {
 		try {
 			System.out.println("Hello from a thread!");
-			String command = (String)in.readObject();
-			if (command.equals("commit")) {
+			Message command = (Message)in.readObject();
+			if (command.getMessage().equals("commit")) {
 				System.out.println("Vamoa hacer un commit.");
+				System.out.println(command.getMessage());
+				System.out.println(command.getFilename());
+				System.out.println(command.getFilesize());
 			}
 			else if (command.equals("checkout")) {
 				System.out.println("Vamoa hacer un checkout.");
@@ -57,6 +64,7 @@ public class MultiThreadedServer extends Thread {
 	private int port;
 	private ServerSocket socket;
 	private boolean isRunning;
+	private HashMap<InetAddress, ServerInformation> metadata;
 
 	public MultiThreadedServer(int port){
 		try {
@@ -101,6 +109,42 @@ public class MultiThreadedServer extends Thread {
 class ServerTest {
 	public static void main(String[] args) {
 		MultiThreadedServer server = new MultiThreadedServer(8888);
+		System.out.println("Inicializing server...");
 		server.start();
+		System.out.println("Server initialized");
 	}
+}
+
+class ServerInformation {
+	
+	private ArrayList<FileInformation> filesInfo;
+	private long totalBytes;
+
+	public ServerInformation() {
+		this.totalBytes = 0;
+		this.filesInfo = new ArrayList<FileInformation>();
+	}
+
+	public long getTotalBytes() { return this.totalBytes; }
+
+	public ArrayList<FileInformation> getFilesInfo() { return this.filesInfo; }
+
+	public void setTotalBytes(long bytes) { this.totalBytes = this.totalBytes + bytes; }
+
+	public void addFileInfo(FileInformation newFileInfo) { this.filesInfo.add(newFileInfo); }
+}
+
+class FileInformation {
+
+	private String filename;
+	private Timestamp version;
+
+	public FileInformation(String filename, Timestamp version) {
+		this.filename = filename;
+		this.version = version;
+	}
+
+	public String getFile() { return this.filename; }
+
+	public void setVersion(Timestamp version) { this.version = version; }
 }

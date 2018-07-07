@@ -5,6 +5,7 @@ import java.net.UnknownHostException;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.File;
 
 public class Client {
 
@@ -35,10 +36,15 @@ public class Client {
 		}
 	}
 	
-	public void commit() {
+	public void commit(String pathName) {
 		try {
+
+			File file = new File(pathName);
+			Message message = new Message("commit", file.getName(), file.length());
+
 			System.out.println("Haciendo commit...");
-			out.writeObject("commit");
+
+			out.writeObject(message);
 			out.flush();
 			//while (true){}
 		}
@@ -54,6 +60,6 @@ public class Client {
 class ClientTest {
 	public static void main(String[] args) {
 		Client client = new Client(8888);
-		client.commit();
+		client.commit("/home/guillermobet/Documentos/USB/pasantia/justificacion.txt");
 	}
 }
