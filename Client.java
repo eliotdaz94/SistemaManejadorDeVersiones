@@ -106,10 +106,6 @@ class ClientTest {
 	public static void main(String[] args) {
 
 		String file = "/home/guillermobet/Documentos/USB/pasantia/justificacion.txt";
-
-		Client client = new Client(8888);
-		//client.commit("/home/guillermobet/Documentos/USB/pasantia/justificacion.txt");
-		client.commit(file);
 		try {
 			Client client = new Client(8888);
 			client.commit(file);
