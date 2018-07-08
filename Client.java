@@ -38,7 +38,6 @@ public class Client {
 	
 	public void commit(String pathName) {
 		try {
-
 			File file = new File(pathName);
 			Message message = new Message("commit", file.getName(), file.length());
 
@@ -46,7 +45,10 @@ public class Client {
 
 			out.writeObject(message);
 			out.flush();
-			//while (true){}
+			message = (Message)in.readObject();
+			System.out.println(message.getMessage());
+			System.out.println(message.getTimestamp());
+			System.out.println(message.getIPs());
 		}
 		catch (IOException ioe) {
 			System.out.println();
@@ -54,12 +56,18 @@ public class Client {
 			System.out.println(ioe);
 			System.out.println("Error sending message.");	
 		}
+		catch (ClassNotFoundException cnfe) {
+			System.out.println();
+			System.out.println("ClassNotFoundException");
+			cnfe.printStackTrace();
+		}
 	}
 }
 
 class ClientTest {
 	public static void main(String[] args) {
 		Client client = new Client(8888);
-		client.commit("/home/guillermobet/Documentos/USB/pasantia/justificacion.txt");
+		//client.commit("/home/guillermobet/Documentos/USB/pasantia/justificacion.txt");
+		client.commit("/home/eliot/Documents/DIVSUM3.cpp");
 	}
 }
