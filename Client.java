@@ -6,6 +6,9 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.DataOutputStream;
+import java.sql.Timestamp;
 
 public class Client {
 
@@ -64,10 +67,62 @@ public class Client {
 	}
 }
 
+class FileSender extends Thread {
+	private Socket socket;
+	private String filePath;
+	private Timestamp version;
+
+	public FileSender(InetAddress serverIP, int port, String filePath, Timestamp version) {
+		try {
+			this.socket = new Socket(serverIP, port);
+			this.filePath = filePath;
+			this.version = version;
+		}
+		catch (IOException ioe) {
+			ioe.printStackTrace();
+		}
+	}
+
+	public void run() {
+		try {
+			DataOutputStream dos = new DataOutputStream(this.socket.getOutputStream());
+			FileInputStream fis = new FileInputStream(this.filePath);
+			byte[] buffer = new byte[4096];
+			int count;
+
+			while ((count = fis.read(buffer)) > 0) {
+				dos.write(buffer, 0, count);
+			}
+			fis.close();
+			dos.close();
+		}
+		catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+}
+
 class ClientTest {
 	public static void main(String[] args) {
+
+		String file = "/home/guillermobet/Documentos/USB/pasantia/justificacion.txt";
+
 		Client client = new Client(8888);
 		//client.commit("/home/guillermobet/Documentos/USB/pasantia/justificacion.txt");
-		client.commit("/home/eliot/Documents/DIVSUM3.cpp");
+		client.commit(file);
+		try {
+			Client client = new Client(8888);
+			client.commit(file);
+		
+			// el master responde con la lista de ips
+
+			FileSender fs = new FileSender(InetAddress.getByName("127.0.0.1"), 2307, file, new Timestamp(System.currentTimeMillis()));
+			fs.start();
+		}
+		catch (IOException ioe) {
+			System.out.println();
+			System.out.println("IOException");
+			System.out.println(ioe);
+		}
 	}
 }

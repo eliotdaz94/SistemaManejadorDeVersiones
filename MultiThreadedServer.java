@@ -8,7 +8,42 @@ import java.util.HashMap;
 import java.util.ArrayList;
 import java.net.InetAddress;
 import java.sql.Timestamp;
+import java.io.DataInputStream;
+import java.io.FileOutputStream;
 
+
+class StorageService extends Thread {
+	private ServerSocket serverSocket;
+
+	public StorageService(int port) {
+		try {
+			this.serverSocket = new ServerSocket(port);
+		}
+		catch (IOException ioe) {
+			ioe.printStackTrace();
+		}
+	}
+
+	public void run() {
+		try {
+			Socket accept = this.serverSocket.accept();
+			DataInputStream dis = new DataInputStream(accept.getInputStream());
+			FileOutputStream fos = new FileOutputStream("justificacionPorSocket.txt");
+			byte[] buffer = new byte[8192];
+			int count;
+
+			while((count = dis.read(buffer)) > 0) {
+				fos.write(buffer, 0, count);
+			}
+			fos.close();
+			dis.close();
+			System.out.println("File created successfully");
+		}
+		catch (IOException ioe) {
+			ioe.printStackTrace();
+		}
+	}
+}
 
 public class MultiThreadedServer extends Thread {
 
@@ -246,6 +281,8 @@ class ServerTest {
 		//server.printStoredFiles();
 		server.start();
 		System.out.println("Server initialized");
+		StorageService ss = new StorageService(2307);
+		ss.start();
 	}
 }
 
