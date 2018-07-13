@@ -10,11 +10,8 @@ class Message implements Serializable {
 	private Timestamp version;
 	private ArrayList<InetAddress> IPs;
 
-	public Message(String message, String fileName, long fileSize) {
+	public Message(String message) {
 		this.message = message;
-		this.fileName = fileName;
-		this.fileSize = fileSize;
-		this.IPs = new ArrayList<InetAddress>();
 	}
 
 	public String getMessage() { return this.message; }
@@ -23,18 +20,22 @@ class Message implements Serializable {
 	
 	public long getFileSize() {return this.fileSize; }
 	
-	public Timestamp getTimestamp() {return this.version; }
+	public Timestamp getVersion() {return this.version; }
 	
 	public ArrayList<InetAddress> getIPs() { return this.IPs; }
 
 	public void setMessage(String message) { this.message = message; }
 	
-	public void setFilename(String fileName) { this.fileName = fileName; }
+	public void setFileName(String fileName) { this.fileName = fileName; }
 	
-	public void setFilesize(long fileSize) { this.fileSize = fileSize; }
+	public void setFileSize(long fileSize) { this.fileSize = fileSize; }
 	
-	public void setTimestamp() { this.version = new Timestamp(System.currentTimeMillis()); }
+	public void setVersion(Timestamp timestamp) { this.version = timestamp; }
+
+	public void setVersion() { this.version = new Timestamp(System.currentTimeMillis()); }
 	
+	public void createIPs() { this.IPs = new ArrayList<InetAddress>(); }
+
 	public void addIP(InetAddress ip) {
 		if (!this.IPs.contains(ip)) {
 			this.IPs.add(ip);

@@ -5,7 +5,7 @@ public class MulticastReceiver extends Thread {
 	private InetAddress group;
 	private int port; 
 	private MulticastSocket socket;
-	private byte[] buf = new byte[1024];
+	private byte[] buf = new byte[4096];
 	
 	public MulticastReceiver() {
 		try {

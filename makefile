@@ -1,5 +1,6 @@
 make:
-	javac Client.java MultiThreadedServer.java Message.java
+	javac Client.java MasterServer.java StorageServer.java Message.java \
+		  MulticastServer.java FileVersion.java
 
 rm:
 	rm *.class

@@ -8,45 +8,11 @@ import java.util.HashMap;
 import java.util.ArrayList;
 import java.net.InetAddress;
 import java.sql.Timestamp;
-import java.io.DataInputStream;
 import java.io.FileOutputStream;
 
+public class MasterServer extends Thread {
 
-class StorageService extends Thread {
-	private ServerSocket serverSocket;
-
-	public StorageService(int port) {
-		try {
-			this.serverSocket = new ServerSocket(port);
-		}
-		catch (IOException ioe) {
-			ioe.printStackTrace();
-		}
-	}
-
-	public void run() {
-		try {
-			Socket accept = this.serverSocket.accept();
-			DataInputStream dis = new DataInputStream(accept.getInputStream());
-			FileOutputStream fos = new FileOutputStream("justificacionPorSocket.txt");
-			byte[] buffer = new byte[8192];
-			int count;
-
-			while((count = dis.read(buffer)) > 0) {
-				fos.write(buffer, 0, count);
-			}
-			fos.close();
-			dis.close();
-			System.out.println("File created successfully");
-		}
-		catch (IOException ioe) {
-			ioe.printStackTrace();
-		}
-	}
-}
-
-public class MultiThreadedServer extends Thread {
-
+	private MulticastServer multicast;
 	private int tolerance;
 	private int port;
 	private ServerSocket socket;
@@ -54,14 +20,22 @@ public class MultiThreadedServer extends Thread {
 	private HashMap<String, ArrayList<FileVersion>> storedFiles;
 	private HashMap<InetAddress, Long> serverBytes;
 
-	public MultiThreadedServer(int tolerance, int port){
+	public MasterServer(int tolerance, int port){
 		try {
+			this.multicast = new MulticastServer();
+			this.multicast.start();
 			this.tolerance = tolerance + 1;
 			this.port = port;
 			this.socket = new ServerSocket(port);
 			this.isRunning = true;
 			this.storedFiles = new HashMap<String, ArrayList<FileVersion>>();
 			this.serverBytes = new HashMap<InetAddress, Long>();
+			
+			Message test = new Message("multicast");
+			test.setFileName("prueba"); 
+			test.setFileSize(new Long(150));
+			multicast.sendMessage(test);
+
 			// Datos de prueba.
 			ArrayList<FileVersion> testArray = new ArrayList<FileVersion>();
 			InetAddress testIP = InetAddress.getByName("159.90.8.140");
@@ -71,6 +45,7 @@ public class MultiThreadedServer extends Thread {
 			testFileVersion.addIP(InetAddress.getByName("159.95.8.180"));
 			testArray.add(testFileVersion);
 			storedFiles.put("HarryPotter",testArray);
+			serverBytes.put(InetAddress.getLocalHost(), new Long(0));
 			serverBytes.put(InetAddress.getByName("159.95.8.100"), new Long(10));
 			serverBytes.put(InetAddress.getByName("159.95.8.110"), new Long(40));
 			serverBytes.put(InetAddress.getByName("159.95.8.120"), new Long(20));
@@ -86,11 +61,11 @@ public class MultiThreadedServer extends Thread {
 	}
 
 	public void run() {
-		while(isRunning) {
+		while (isRunning) {
 			Socket clientSocket;
 			try {
 				clientSocket = socket.accept();
-				(new ServerWorker(clientSocket)).start();
+				(new MasterServerWorker(clientSocket)).start();
 			} 
 			catch (IOException ioe) {
 				System.out.println();
@@ -107,7 +82,7 @@ public class MultiThreadedServer extends Thread {
 			System.out.println("IOException");
 			System.out.println(ioe);
 		}
-		System.out.println("Server stopped.") ;
+		System.out.println("Server stopped.");
 	}
 
 	public void printStoredFiles() {
@@ -128,18 +103,19 @@ public class MultiThreadedServer extends Thread {
 		}
 	}
 
-	public class ServerWorker extends Thread {
+	public class MasterServerWorker extends Thread {
 		
 		private Socket clientSocket;
 		private ObjectOutputStream out;
 		private ObjectInputStream in;
 
-		public ServerWorker(Socket clientSocket) {
+		public MasterServerWorker(Socket clientSocket) {
 			try {
 				this.clientSocket = clientSocket;
-				out = new ObjectOutputStream(this.clientSocket.
-											 getOutputStream());
-				in = new ObjectInputStream(this.clientSocket.getInputStream());
+				this.out = new ObjectOutputStream(this.clientSocket.
+											 	  getOutputStream());
+				this.in = new ObjectInputStream(this.clientSocket.
+												getInputStream());
 			}
 			catch (IOException ioe) {
 				System.out.println();
@@ -153,15 +129,17 @@ public class MultiThreadedServer extends Thread {
 		// storedFiles y serverBytes.
 		public void run() {
 			try {
-				System.out.println("Hello from a thread!");
-				Message command = (Message)in.readObject();
-				if (command.getMessage().equals("commit")) {
-					System.out.println("Vamoa hacer un commit.");
-					System.out.println(command.getMessage());
-					System.out.println(command.getFileName());
-					System.out.println(command.getFileSize());
+				System.out.println("Desde hilo...");
+				Message request = (Message)in.readObject();
+				System.out.println("Recibiendo " + request.getMessage() + ":");
+				if (request.getMessage().equals("commit")) {
+					System.out.println("  " + request.getFileName());
+					System.out.println("  " + request.getFileSize());
+					System.out.println();
 					printStoredFiles();
-					command.setTimestamp();
+					Message reply = new Message("ACK");
+					reply.setVersion();
+					reply.createIPs();
 					// Balance de carga
 					ArrayList<Long> auxSizes = new ArrayList<Long>();
 					int i = 0;
@@ -171,7 +149,7 @@ public class MultiThreadedServer extends Thread {
 					for (InetAddress auxAddress : serverBytes.keySet()) {
 						auxValue = serverBytes.get(auxAddress);
 						if (i < tolerance) {
-							command.addIP(auxAddress);
+							reply.addIP(auxAddress);
 							auxSizes.add(auxValue);
 							i++;
 						}
@@ -187,149 +165,59 @@ public class MultiThreadedServer extends Thread {
 							}
 							if (auxValue < maxSize) {
 								auxSizes.set(maxIndex, auxValue);
-								command.replaceIP(maxIndex, auxAddress);
+								reply.replaceIP(maxIndex, auxAddress);
 							}
 						}
 					}
 					System.out.println(serverBytes);
-					System.out.println(command.getFileSize());
+					System.out.println(request.getFileSize());
 					// Necesitamos hacer control de concurrencia.
 					for (InetAddress auxAddress : serverBytes.keySet()) {
-						if (command.getIPs().contains(auxAddress)) {
+						if (reply.getIPs().contains(auxAddress)) {
 							auxValue = serverBytes.get(auxAddress);
 							serverBytes.replace(auxAddress, auxValue + 
-												command.getFileSize());
+												request.getFileSize());
 						}
 					}
 					// Fin Seccion Critica
 					System.out.println(serverBytes);
-					System.out.println(command.getIPs());
 					// Fin del balance de carga.
 					
 					// Enviamos el mensaje de vuelta.
-					command.setMessage("ACK");
-					out.writeObject(command);
+					System.out.println("Enviando " + reply.getMessage() + ":");
+					System.out.println("  " + reply.getVersion());
+					System.out.println("  " + reply.getIPs());
+					System.out.println();
+					out.writeObject(reply);
 					out.flush();
 				}
-				else if (command.equals("checkout")) {
+				else if (request.equals("checkout")) {
 					System.out.println("Vamoa hacer un checkout.");
 				}
 				else {
 					System.out.println("Mensaje erroneo.");
 				}
 			}
-			catch (IOException ioe) {
-				System.out.println();
-				System.out.println("IOException");
-				ioe.printStackTrace();
-			}
 			catch (ClassNotFoundException cnfe) {
 				System.out.println();
 				System.out.println("ClassNotFoundException");
 				cnfe.printStackTrace();
 			}
+			catch (IOException ioe) {
+				System.out.println();
+				System.out.println("IOException");
+				ioe.printStackTrace();
+			}
 		}
 	}
 }
 
-class FileVersion {
-
-	private Timestamp timestamp;
-	private long fileSize;
-	private InetAddress client;
-	private ArrayList<InetAddress> replicas;
-
-	public FileVersion(long fileSize, InetAddress client) {
-		this.timestamp = new Timestamp(System.currentTimeMillis());
-		this.fileSize = fileSize;
-		this.client = client;
-		this.replicas = new ArrayList<InetAddress>();
-	}
-
-	public Timestamp getTimestamp() { return this.timestamp; }
-
-	public long getfileSize() { return this.fileSize; }
-
-	public InetAddress getClient() { return this.client; }
-
-	public ArrayList<InetAddress> getReplicas() { return this.replicas; }
-
-	public void setTimestamp() { this.timestamp = new Timestamp(System.currentTimeMillis()); }
-
-	public void setFilesize(long fileSize) { this.fileSize = fileSize; }
-
-	public void addIP(InetAddress ip) {
-		if (!this.replicas.contains(ip)) {
-			this.replicas.add(ip);
-		}
-	}
-	
-	public boolean searchIP(InetAddress ip) { 
-		if (this.replicas.contains(ip)) {
-			return true;
-		}
-		else {
-			return false;
-		}
-	}
-}
-
-class ServerTest {
+class MasterServerTest {
 	public static void main(String[] args) {
-		MultiThreadedServer server = new MultiThreadedServer(2, 8888);
+		MasterServer server = new MasterServer(0, 8888);
 		System.out.println("Inicializing server...");
 		//server.printStoredFiles();
 		server.start();
 		System.out.println("Server initialized");
-		StorageService ss = new StorageService(2307);
-		ss.start();
 	}
 }
-
-/*
-	public int removeIP(InetAddress ip) {
-		if (this.replicas.contains(ip)) {
-			this.replicas.remove(ip);
-			return 0;
-		}
-		else {
-			return 1;
-		}
-	}
-*/
-
-/*
-class ServerInformation {
-	
-	private ArrayList<FileInformation> filesInfo;
-	private long totalBytes;
-
-	public ServerInformation() {
-		this.totalBytes = 0;
-		this.filesInfo = new ArrayList<FileInformation>();
-	}
-
-	public long getTotalBytes() { return this.totalBytes; }
-
-	public ArrayList<FileInformation> getFilesInfo() { return this.filesInfo; }
-
-	public void setTotalBytes(long bytes) { this.totalBytes = this.totalBytes + bytes; }
-
-	public void addFileInfo(FileInformation newFileInfo) { this.filesInfo.add(newFileInfo); }
-}
-
-class FileInformation {
-
-	private String fileName;
-	private Timestamp version;
-
-	public FileInformation(String fileName, Timestamp version) {
-		this.fileName = fileName;
-		this.version = version;
-	}
-
-	public String getFile() { return this.fileName; }
-
-	public void setVersion(Timestamp version) { this.version = version; }
-}
-*/
