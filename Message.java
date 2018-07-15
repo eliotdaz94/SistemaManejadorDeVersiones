@@ -1,13 +1,15 @@
-import java.sql.Timestamp;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.net.InetAddress;
+import java.sql.Timestamp;
 
 class Message implements Serializable {
 	private String message;
 	private String fileName;
 	private long fileSize;
 	private Timestamp version;
+	private InetAddress requester;
 	private ArrayList<InetAddress> IPs;
 
 	public Message(String message) {
@@ -21,6 +23,8 @@ class Message implements Serializable {
 	public long getFileSize() {return this.fileSize; }
 	
 	public Timestamp getVersion() {return this.version; }
+
+	public InetAddress getRequester() { return this.requester; }
 	
 	public ArrayList<InetAddress> getIPs() { return this.IPs; }
 
@@ -33,6 +37,17 @@ class Message implements Serializable {
 	public void setVersion(Timestamp timestamp) { this.version = timestamp; }
 
 	public void setVersion() { this.version = new Timestamp(System.currentTimeMillis()); }
+
+	public void setRequester() { 
+		try {
+			this.requester = InetAddress.getLocalHost(); 
+		}
+		catch (UnknownHostException uhe) {
+			System.out.println();
+			System.out.println("UnknownHostException");
+			System.out.println(uhe);
+		}
+	}
 	
 	public void createIPs() { this.IPs = new ArrayList<InetAddress>(); }
 

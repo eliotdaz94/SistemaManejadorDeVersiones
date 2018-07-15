@@ -7,6 +7,8 @@ import java.io.ByteArrayInputStream;
 import java.io.ObjectOutputStream;
 import java.io.ObjectInputStream;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.ArrayList;
 import java.lang.ClassNotFoundException;
 
 public class MulticastServer extends Thread {
@@ -19,8 +21,11 @@ public class MulticastServer extends Thread {
 	private ByteArrayInputStream inByteStream;
 	private ObjectOutputStream os;
 	private ObjectInputStream is;
+	private HashMap<String, ArrayList<FileVersion>> storedFiles;
+	private HashMap<InetAddress, Long> serverBytes;
 	
-	public MulticastServer() {
+	public MulticastServer(HashMap<String, ArrayList<FileVersion>> storedF,
+						   HashMap<InetAddress, Long> serverB) {
 		try {
 			this.group = InetAddress.getByName("228.5.6.7");
 			this.port = 6789;
@@ -28,8 +33,9 @@ public class MulticastServer extends Thread {
 			this.socket.joinGroup(this.group);
 			this.recvBuf = new byte[4096];
 			this.outByteStream = new ByteArrayOutputStream(4096);
-			this.inByteStream = new ByteArrayInputStream(recvBuf);
 			this.os = new ObjectOutputStream(this.outByteStream);
+			this.storedFiles = storedF;
+			this.serverBytes = serverB;
 		} 
 		catch (UnknownHostException uhe) {
 			System.out.println();
@@ -46,15 +52,16 @@ public class MulticastServer extends Thread {
 
 	public void sendMessage(Message msg) {      
 		try {
-			os.writeObject(msg);
-			os.flush();
-
+			this.outByteStream = new ByteArrayOutputStream(4096);
+			this.os = new ObjectOutputStream(this.outByteStream);
+			this.os.writeObject(msg);
+			this.os.flush();
+			System.out.println(msg.getMessage());
 			// Retrieves byte array.
 			this.sendBuf = this.outByteStream.toByteArray();
 			DatagramPacket packet = new DatagramPacket(this.sendBuf, 
 													   this.sendBuf.length,
 													   this.group, this.port);
-			int byteCount = packet.getLength();
 			this.socket.send(packet);
 		}
 		catch (IOException ioe) {
@@ -65,21 +72,108 @@ public class MulticastServer extends Thread {
 		}
 	}
 
+	public void register() {
+		Message msg = new Message("register");
+		msg.setRequester();
+		sendMessage(msg);
+	}
+
+	public void printStoredFiles() {
+		for (String fileName : this.storedFiles.keySet()) {
+			System.out.println(fileName);	
+			ArrayList<FileVersion> auxFiles = this.storedFiles.get(fileName);
+			for (FileVersion auxVersion : auxFiles) {
+				System.out.println("  Version: " + auxVersion.getTimestamp());
+				System.out.println("  Tamaño: " + auxVersion.getfileSize());
+				System.out.println("  Cliente: " + 
+								   auxVersion.getClient().getHostAddress());
+				System.out.println("  Servidores: ");
+				for (InetAddress auxAddress : auxVersion.getReplicas()) {
+					System.out.println("    " + auxAddress.getHostAddress());
+				}
+				System.out.println();
+			}	
+		}
+	}
+
 	public void run() {
 		try {
 			while (true) {
+				//this.recvBuf = new byte[4096];
 				DatagramPacket packet = new DatagramPacket(this.recvBuf, 
 														   this.recvBuf.length);
 				this.socket.receive(packet);
+				this.inByteStream = new ByteArrayInputStream(recvBuf);
 				this.is = new ObjectInputStream(this.inByteStream);
-				int byteCount = packet.getLength();
 				Message msg = (Message)is.readObject();
-				System.out.println(msg.getMessage());
-				System.out.println(msg.getFileName());
-				System.out.println(msg.getFileSize());
-				if (msg.getMessage().equals("end")) {
+				System.out.println("Recibiendo multicast " + msg.getMessage() 
+								   + ":");
+				// Si se recibe un "actualization" se debe modificar el mapa de
+				// versiones almacenadas.
+				if (msg.getMessage().equals("actualization")) {
+					System.out.println("  " + msg.getFileName());
+					System.out.println("  " + msg.getFileSize());
+					System.out.println("  " + msg.getVersion());
+					System.out.println("  " + msg.getRequester());
+					ArrayList<FileVersion> versionsList;
+					FileVersion auxVersion;
+					// Si el archivo ya se encuentra en el mapa, se verifica
+					// si la version existe.
+					if (storedFiles.containsKey(msg.getFileName())) {
+						boolean exist = false;
+						versionsList = storedFiles.get(msg.getFileName());
+						for (int i = 0; i < versionsList.size(); i++) {
+							auxVersion = versionsList.get(i);
+							// En caso de que la version exista, solo se agrega
+							// la IP del servidor (que notifica el almacenamiento)
+							// en la lista de réplicas de la versión.
+							if (auxVersion.equals(msg.getVersion(), 
+												  msg.getRequester())) {
+								// No se si esto es correcto.
+								auxVersion.addIP(packet.getAddress());
+								exist = true;
+								break;
+							}
+						}
+						// En caso de que la versión no exista, se crea una
+						// nueva versión y se añade al mapa en el archivo
+						// correspondiente.
+						if (!exist) {
+							auxVersion = new FileVersion(msg.getVersion(),
+														 msg.getFileSize(), 
+														 msg.getRequester());
+							versionsList.add(auxVersion);
+						} 
+					}
+					// Si el archivo no se encuentra en el mapa, se crea la 
+					// versión y se añade una entrada al mapa cuya clave será
+					// el nombre del archivo almacenado.
+					else {
+						auxVersion = new FileVersion(msg.getVersion(),
+													 msg.getFileSize(), 
+													 msg.getRequester());
+						versionsList = new ArrayList<FileVersion>();
+						versionsList.add(auxVersion);
+						storedFiles.put(msg.getFileName(), versionsList);
+					}
+					System.out.println();
+					printStoredFiles();
+				}
+				else if (msg.getMessage().equals("register")) {
+					System.out.println("  " + msg.getRequester());
+					if (!serverBytes.containsKey(msg.getRequester())) {
+						serverBytes.put(msg.getRequester(), new Long(0));
+						register();
+					}
+					System.out.println(this.serverBytes);
+				}
+				else if (msg.getMessage().equals("end")) {
 					break;
 				}
+				else {
+					System.out.println("  Mensaje desconocido.");	
+				}
+				System.out.println();
 			}
 			socket.leaveGroup(group);
 			socket.close();

@@ -1,29 +1,37 @@
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.InetAddress;
-import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.io.ObjectInputStream;
 import java.io.DataInputStream;
 import java.io.FileOutputStream;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.ArrayList;
 import java.lang.ClassNotFoundException;
 import java.sql.Timestamp;
 
 public class StorageServer extends Thread {
 
-	private MulticastServer multicast;
 	private int port;
 	private ServerSocket socket;
 	private boolean isRunning;
+	private HashMap<String, ArrayList<FileVersion>> storedFiles;
+	private HashMap<InetAddress, Long> serverBytes;
+	private MulticastServer multicast;
 
 	public StorageServer(int port){
 		try {
-			this.multicast = new MulticastServer();
-			//this.multicast.start();
 			this.port = port;
 			this.socket = new ServerSocket(port);
 			this.isRunning = true;
-		} 
+			this.storedFiles = new HashMap<String, ArrayList<FileVersion>>();
+			this.serverBytes = new HashMap<InetAddress, Long>();
+			this.serverBytes.put(InetAddress.getLocalHost(), new Long(0));
+			this.multicast = new MulticastServer(storedFiles, serverBytes);
+			this.multicast.start();
+			this.multicast.register();
+		}
 		catch (IOException ioe) {
 			System.out.println();
 			System.out.println("IOException");
@@ -89,7 +97,8 @@ class StorageServerWorker extends Thread {
 		try {
 			System.out.println("Desde un hilo de almacenamiento...");
 			Message request = (Message)in.readObject();
-			System.out.println("Recibiendo " + request.getMessage() + ":");
+			System.out.println("Recibiendo " + request.getMessage() + " de " 
+							   + request.getRequester() + ":");
 			if (request.getMessage().equals("commit")) {
 				System.out.println("  " + request.getFileName());
 				System.out.println("  " + request.getFileSize());
@@ -100,7 +109,6 @@ class StorageServerWorker extends Thread {
 				String[] parts = request.getFileName().split("(?=\\.)");
 				String newFileName = parts[0] + "%" + request.getVersion()
 									 + parts[1];
-				System.out.println(newFileName);
 				
 				// Se retorna ACK para comenzar la transferencia del archivo.
 				Message reply = new Message("ACK");
@@ -121,10 +129,14 @@ class StorageServerWorker extends Thread {
 				
 				// Se notifica al resto de los servidores sobre la nueva versión 
 				// almacenada.
-				Message confirm = request; 
-				confirm.setMessage("actualization");
-				System.out.println("Enviando " + confirm.getMessage() + ".");
+				Message notif = request; 
+				notif.setMessage("actualization");
+				System.out.println("Enviando " + notif.getMessage() + ":");
+				System.out.println("  " + notif.getFileName());
+				System.out.println("  " + notif.getFileSize());
+				System.out.println("  " + notif.getVersion());
 				System.out.println();
+				multicast.sendMessage(notif);
 			}
 			else if (request.getMessage().equals("checkout")) {
 				System.out.println("Vamoa hacer un checkout.");
@@ -147,8 +159,9 @@ class StorageServerWorker extends Thread {
 class StorageServerTest {
 	public static void main(String[] args) {
 		StorageServer server = new StorageServer(8889);
-		System.out.println("Inicializing server...");
+		System.out.println("Iniciando servidor.");
 		server.start();
-		System.out.println("Server initialized");
+		System.out.println("Servidor iniciado.");
+		System.out.println();
 	}
 }

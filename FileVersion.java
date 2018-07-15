@@ -1,6 +1,6 @@
 import java.net.InetAddress;
-import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.sql.Timestamp;
 
 public class FileVersion {
 
@@ -9,8 +9,8 @@ public class FileVersion {
 	private InetAddress client;
 	private ArrayList<InetAddress> replicas;
 
-	public FileVersion(long fileSize, InetAddress client) {
-		this.timestamp = new Timestamp(System.currentTimeMillis());
+	public FileVersion(Timestamp timestamp, long fileSize, InetAddress client) {
+		this.timestamp = timestamp;
 		this.fileSize = fileSize;
 		this.client = client;
 		this.replicas = new ArrayList<InetAddress>();
@@ -23,6 +23,8 @@ public class FileVersion {
 	public InetAddress getClient() { return this.client; }
 
 	public ArrayList<InetAddress> getReplicas() { return this.replicas; }
+
+	public void setTimestamp(Timestamp timestamp) { this.timestamp = timestamp; }
 
 	public void setTimestamp() { 
 		this.timestamp = new Timestamp(System.currentTimeMillis()); 
@@ -43,5 +45,9 @@ public class FileVersion {
 		else {
 			return false;
 		}
+	}
+
+	public boolean equals(Timestamp timestamp, InetAddress client) {
+		return this.timestamp == timestamp && this.client == client;
 	}
 }

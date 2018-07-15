@@ -2,16 +2,16 @@ import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
-import java.io.IOException;
-import java.io.FileNotFoundException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.DataOutputStream;
+import java.io.IOException;
+import java.io.FileNotFoundException;
+import java.util.ArrayList;
 import java.lang.ClassNotFoundException;
 import java.sql.Timestamp;
-import java.util.ArrayList;
 
 public class Client {
 
@@ -48,6 +48,7 @@ public class Client {
 			Message request = new Message("commit");
 			request.setFileName(file.getName()); 
 			request.setFileSize(file.length());
+			request.setRequester();
 			
 			// Se envia el mensaje de commit.
 			System.out.println("Enviando " + request.getMessage() + ":");
