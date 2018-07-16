@@ -129,6 +129,7 @@ public class Client {
 				System.out.println("Recibiendo " + reply.getMessage() + ".");
 				System.out.println("El archivo solicitado no existe.");
 			}
+			System.out.println("Yo ya telminé...");
 			this.socket.close();
 		}
 		catch (IOException ioe) {
