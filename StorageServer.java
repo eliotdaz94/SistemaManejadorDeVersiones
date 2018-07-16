@@ -4,7 +4,9 @@ import java.net.InetAddress;
 import java.io.ObjectOutputStream;
 import java.io.ObjectInputStream;
 import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.FileOutputStream;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.ArrayList;
@@ -73,6 +75,7 @@ class StorageServerWorker extends Thread {
 	private ObjectOutputStream out;
 	private ObjectInputStream in;
 	private DataInputStream din;
+	private DataOutputStream dos;
 	private MulticastServer multicast;
 
 	public StorageServerWorker(Socket clientSocket, MulticastServer multicast) {
@@ -83,6 +86,7 @@ class StorageServerWorker extends Thread {
 			this.in = new ObjectInputStream(this.clientSocket.
 											getInputStream());
 			this.din = new DataInputStream(this.clientSocket.getInputStream());
+			this.dos = new DataOutputStream(this.clientSocket.getOutputStream());
 			this.multicast = multicast;
 		}
 		catch (IOException ioe) {
@@ -114,14 +118,14 @@ class StorageServerWorker extends Thread {
 				Message reply = new Message("ACK");
 				System.out.println("Enviando " + reply.getMessage() + ".");
 				System.out.println();
-				out.writeObject(reply);
-				out.flush();
+				this.out.writeObject(reply);
+				this.out.flush();
 
 				// Se recibe el archivo.
 				FileOutputStream fos = new FileOutputStream(newFileName);
 				byte[] buffer = new byte[8192];
 				int count;
-				while((count = din.read(buffer)) > 0) {
+				while((count = this.din.read(buffer)) > 0) {
 					fos.write(buffer, 0, count);
 				}
 				fos.close();
@@ -140,7 +144,27 @@ class StorageServerWorker extends Thread {
 				multicast.sendMessage(notif);
 			}
 			else if (request.getMessage().equals("checkout")) {
-				System.out.println("Vamoa hacer un checkout.");
+				//System.out.println("Vamoa hacer un checkout.");
+				String[] parts = request.getFileName().split("(?=\\.)");
+				String newFileName = parts[0] + "%" + request.getVersion()
+									 + parts[1];
+
+				Message reply = new Message("ACK");
+				reply.setFileName(request.getFileName());
+				reply.setFileSize(request.getFileSize());
+				System.out.println("Enviando " + reply.getMessage() + ".");
+				System.out.println();
+				this.out.writeObject(reply);
+				this.out.flush();
+
+				FileInputStream fis = new FileInputStream(newFileName);
+				byte[] buffer = new byte[8192];
+				int count;
+				while ((count = fis.read(buffer)) > 0) {
+					this.dos.write(buffer, 0, count);
+				}
+				fis.close();
+				System.out.println("File sent successfully!");
 			}
 			else {
 				System.out.println("Mensaje erroneo.");

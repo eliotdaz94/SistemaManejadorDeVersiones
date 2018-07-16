@@ -199,7 +199,31 @@ public class MasterServer extends Thread {
 					out.flush();
 				}
 				else if (request.equals("checkout")) {
-					System.out.println("Vamoa hacer un checkout.");
+					//System.out.println("Vamoa hacer un checkout.");
+					System.out.println("  " + request.getFileName());
+					Message reply = new Message("ACK");
+					reply.setFileName(request.getFileName());
+					ArrayList<FileVersion> fileInfo = storedFiles.getOrDefault(request.getFileName(), new ArrayList<FileVersion>());
+					for (FileVersion fv : fileInfo) {
+						if (fv.getClient().equals(request.getRequester())) {
+							reply.createIPs();
+							for (InetAddress ip : fv.getReplicas()) {
+								reply.addIP(ip);
+							}
+							reply.setFileSize(fv.getfileSize());
+							reply.setVersion(fv.getTimestamp());
+							break;
+						}
+					}
+					reply.setRequester();
+					
+					// Enviamos el mensaje de vuelta.
+					System.out.println("Enviando " + reply.getMessage() + ":");
+					System.out.println("  " + reply.getVersion());
+					System.out.println("  " + reply.getIPs());
+					System.out.println();
+					out.writeObject(reply);
+					out.flush();
 				}
 				else {
 					System.out.println("Mensaje erroneo.");
