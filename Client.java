@@ -293,8 +293,8 @@ class FileReceiver extends Thread {
 class ClientTest {
 	public static void main(String[] args) {
 		try {
-			InetAddress master = InetAddress.getByName(args[1]);
-			InetAddress myPublicIP = InetAddress.getByName(args[2]);
+			InetAddress master = InetAddress.getByName(args[0]);
+			InetAddress myPublicIP = InetAddress.getByName(args[1]);
 			Client client = new Client(8888, master, myPublicIP);
 			Scanner sc = new Scanner(System.in);
 			String output;
