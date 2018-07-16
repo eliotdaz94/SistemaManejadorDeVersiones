@@ -6,7 +6,10 @@ ifeq (runStorage,$(firstword $(MAKECMDGOALS)))
   RUN_ARGS := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
   $(eval $(RUN_ARGS):;@:)
 endif
-
+ifeq (runClient,$(firstword $(MAKECMDGOALS)))
+  RUN_ARGS := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
+  $(eval $(RUN_ARGS):;@:)
+endif
 
 make:
 	javac -encoding ISO-8859-1 -cp ./gson-2.8.5.jar \
@@ -15,7 +18,7 @@ make:
 
 runMaster:
 	java -cp ./:./gson-2.8.5.jar \
-	MasterServerTest
+	MasterServerTest $(RUN_ARGS)
 
 runStorage:
 	java -cp ./:./gson-2.8.5.jar \
