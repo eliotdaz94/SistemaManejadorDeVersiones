@@ -17,22 +17,25 @@ import java.lang.ClassNotFoundException;
 import java.sql.Timestamp;
 import java.net.InetSocketAddress;
 import java.net.SocketTimeoutException;
+import java.util.Arrays;
 
 public class Client {
 
 	private InetAddress serverAddress;
+	private InetAddress clientPublicIP;
 	private int serverPort;
 	private Socket socket;
 	private ObjectOutputStream out;
 	private ObjectInputStream in;
 
-	public Client(int port) {
+	public Client(int port, InetAddress serverAddress, InetAddress clientPublicIP) {	
 		try {
-			serverAddress = InetAddress.getLocalHost();
-			serverPort = port;
-			//socket = new Socket();
-			//out = new ObjectOutputStream(socket.getOutputStream());
-			//in = new ObjectInputStream(socket.getInputStream());
+			this.serverAddress =  serverAddress;
+			this.clientPublicIP = clientPublicIP;
+			this.serverPort = port;
+			this.socket = new Socket(serverAddress, port);
+			this.out = new ObjectOutputStream(socket.getOutputStream());
+			this.in = new ObjectInputStream(socket.getInputStream());
 		}
 		catch (UnknownHostException uhe) {
 			System.out.println();
@@ -65,10 +68,9 @@ public class Client {
 			System.out.println("  " + request.getFileName());
 			System.out.println("  " + request.getFileSize());
 			System.out.println();
-			System.out.println(this.socket.isClosed());
-			out.writeObject(request);
-			out.flush();
-			
+			this.out.writeObject(request);
+			this.out.flush();
+		
 			// Se espera por el mensaje de respuesta.
 			Message reply = (Message)in.readObject();
 			System.out.println("Recibiendo " + reply.getMessage() + ":");
@@ -308,32 +310,39 @@ class FileReceiver extends Thread {
 
 class ClientTest {
 	public static void main(String[] args) {
-		Client client = new Client(8888);
-		Scanner sc = new Scanner(System.in);
-		String output;
-		String input;
-		while (true) {
-			input = sc.nextLine();
-			System.out.println();
-			String[] parts = input.split(" ");
-			if (parts[0].equals("commit")) {
-				File commitFile = new File(parts[1]);
-				if (commitFile.exists()) {
-					client.commit(parts[1]);
+		try {
+			InetAddress master = InetAddress.getByName(args[1]);
+			InetAddress myPublicIP = InetAddress.getByName(args[2]);
+			Client client = new Client(8888, master, myPublicIP);
+			Scanner sc = new Scanner(System.in);
+			String output;
+			String input;
+			while (true) {
+				input = sc.nextLine();
+				System.out.println();
+				String[] parts = input.split(" ");
+				if (parts[0].equals("commit")) {
+					File commitFile = new File(parts[1]);
+					if (commitFile.exists()) {
+						client.commit(parts[1]);
+					}
+					else {
+						System.out.println("Archivo no encontrado.");	
+					}
+				}
+				else if (parts[0].equals("checkout")) {
+					client.checkout(parts[1]);	
 				}
 				else {
-					System.out.println("Archivo no encontrado.");	
+					System.out.println("Comando no válido. Uso:");
+					System.out.println("  commit pathName");
+					System.out.println("  checkout pathName");	
 				}
+				System.out.println();
 			}
-			else if (parts[0].equals("checkout")) {
-				client.checkout(parts[1]);	
-			}
-			else {
-				System.out.println("Comando no válido. Uso:");
-				System.out.println("  commit pathName");
-				System.out.println("  checkout pathName");	
-			}
-			System.out.println();
+		}
+		catch (UnknownHostException uhe) {
+			uhe.printStackTrace();
 		}
 		/*
 		//String file = "/home/eliot/Documents/etiquetas.pdf";
