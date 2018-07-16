@@ -1,5 +1,5 @@
 make:
-	javac -cp ./gson-2.8.5.jar \
+	javac -encoding ISO-8859-1 -cp ./gson-2.8.5.jar \
 	Client.java MasterServer.java StorageServer.java Message.java \
 	MulticastServer.java FileVersion.java
 
