@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.Scanner;
+import java.lang.Integer;
 import java.lang.ClassNotFoundException;
 import java.sql.Timestamp;
 import java.net.InetSocketAddress;
@@ -22,29 +23,32 @@ import java.net.ConnectException;
 
 public class Client {
 
-	private InetAddress serverAddress;
-	private InetAddress clientPublicIP;
-	private int serverPort;
+	private InetAddress masterAddress;
+	private int masterPort;
+	private int storagePort;
+	private InetAddress myAddress;
 	private Socket socket;
 	private ObjectOutputStream out;
 	private ObjectInputStream in;
 
-	public Client(int port, InetAddress serverAddress, InetAddress clientPublicIP) {	
-			this.serverAddress =  serverAddress;
-			this.clientPublicIP = clientPublicIP;
-			this.serverPort = port;
+	public Client(InetAddress masterAddress, int masterPort, int storagePort,
+				  InetAddress myAddress) {	
+		this.masterAddress =  masterAddress;
+		this.masterPort = masterPort;
+		this.storagePort = storagePort;
+		this.myAddress = myAddress;
 	}
 	
 	public void commit(String pathName) {
 		try {
-			this.socket = new Socket(this.serverAddress, this.serverPort);
+			this.socket = new Socket(this.masterAddress, this.masterPort);
 			this.out = new ObjectOutputStream(socket.getOutputStream());
 			this.in = new ObjectInputStream(socket.getInputStream());
 			File file = new File(pathName);
 			Message request = new Message("commit");
 			request.setFileName(file.getName()); 
 			request.setFileSize(file.length());
-			request.setRequester(this.clientPublicIP);
+			request.setRequester(this.myAddress);
 			
 			// Se envia el mensaje de commit.
 			System.out.println("Enviando " + request.getMessage() + ":");
@@ -64,7 +68,7 @@ public class Client {
 				request.setVersion(reply.getVersion());
 				ArrayList<InetAddress> storageServers = reply.getIPs();
 				for (int i = 0; i < storageServers.size(); i++) {
-					new FileSender(storageServers.get(i), 8889, pathName,
+					new FileSender(storageServers.get(i), storagePort, pathName,
 								   request).start();	
 				}
 			}
@@ -89,12 +93,12 @@ public class Client {
 
 	public void checkout(String file) {
 		try {
-			this.socket = new Socket(this.serverAddress, this.serverPort);
+			this.socket = new Socket(this.masterAddress, this.masterPort);
 			this.out = new ObjectOutputStream(socket.getOutputStream());
 			this.in = new ObjectInputStream(socket.getInputStream());
 			Message request = new Message("checkout");
 			request.setFileName(file);
-			request.setRequester(this.clientPublicIP);
+			request.setRequester(this.myAddress);
 
 			// Se envia el mensaje de checkout.
 			System.out.println("Enviando " + request.getMessage() + ":");
@@ -115,8 +119,8 @@ public class Client {
 					try {
 						reply.setMessage("checkout");
 						System.out.println(reply.getMessage());
-						(new FileReceiver(ip, 8889, reply.getFileName(), 
-										  reply)).start();
+						fileReceiver(ip, this.storagePort, reply.getFileName(),
+									 reply);
 						break;
 					}
 					catch (Exception e) { 
@@ -129,7 +133,7 @@ public class Client {
 				System.out.println("Recibiendo " + reply.getMessage() + ".");
 				System.out.println("El archivo solicitado no existe.");
 			}
-			System.out.println("Yo ya telminé...");
+			System.out.println("Yo ya telminé.");
 			this.socket.close();
 		}
 		catch (IOException ioe) {
@@ -144,10 +148,63 @@ public class Client {
 			cnfe.printStackTrace();
 		}
 	}
+
+	public void fileReceiver(InetAddress serverIP, int port, String file,
+							 Message request) {
+		try {
+			System.out.println("Antes de conectanos...");
+			Socket storageSocket = new Socket(serverIP, port);
+			ObjectInputStream in = new ObjectInputStream(storageSocket.
+														 getInputStream());
+			ObjectOutputStream out = new ObjectOutputStream(storageSocket.
+															getOutputStream());
+			DataInputStream din = new DataInputStream(storageSocket.
+													  getInputStream());
+			System.out.println("Despues de conectanos...");
+			out.writeObject(request);
+			out.flush();
+
+			// Se espera por el mensaje de respuesta.
+			Message reply = (Message)in.readObject();
+			System.out.println("Recibiendo " + reply.getMessage() + ".");
+			System.out.println();
+
+			FileOutputStream fos = new FileOutputStream(reply.getFileName());
+			byte[] buffer = new byte[8192];
+			int count;
+			while((count = din.read(buffer)) > 0) {
+				fos.write(buffer, 0, count);
+			}
+			fos.close();
+			System.out.println("File received successfully!");
+			out.close();
+			in.close();
+			din.close();
+			storageSocket.close();
+		}
+		catch (SocketTimeoutException ste) {
+			System.out.println();
+			System.out.println("SocketTimeoutException");
+			System.out.println(ste);
+			ste.printStackTrace();
+		}
+		catch (ClassNotFoundException cnfe) {
+			System.out.println();
+			System.out.println("ClassNotFoundException");
+			cnfe.printStackTrace();
+		}
+		catch (IOException ioe) {
+			System.out.println();
+			System.out.println("IOException");
+			System.out.println(ioe);
+			System.out.println("Error sending message.");
+			ioe.printStackTrace();
+		}
+	}
 }
 
 class FileSender extends Thread {
-	private Socket socket;
+	private Socket storageSocket;
 	private String filePath;
 	private Message request;
 	private ObjectOutputStream out;
@@ -157,12 +214,15 @@ class FileSender extends Thread {
 	public FileSender(InetAddress serverIP, int port, String filePath, 
 					  Message message) {
 		try {
-			this.socket = new Socket(serverIP, port);
+			this.storageSocket = new Socket(serverIP, port);
 			this.filePath = filePath;
 			this.request = message;
-			this.out = new ObjectOutputStream(this.socket.getOutputStream());
-			this.dos = new DataOutputStream(this.socket.getOutputStream());
-			this.in = new ObjectInputStream(this.socket.getInputStream());
+			this.out = new ObjectOutputStream(this.storageSocket.
+											  getOutputStream());
+			this.dos = new DataOutputStream(this.storageSocket.
+											getOutputStream());
+			this.in = new ObjectInputStream(this.storageSocket.
+											getInputStream());
 		}
 		catch (IOException ioe) {
 			ioe.printStackTrace();
@@ -202,7 +262,7 @@ class FileSender extends Thread {
 			this.out.close();
 			this.dos.close();
 			this.in.close();
-			this.socket.close();
+			this.storageSocket.close();
 		}
 		catch (FileNotFoundException fnfe) {
 			System.out.println();
@@ -224,6 +284,7 @@ class FileSender extends Thread {
 	}
 }
 
+/*
 class FileReceiver extends Thread {
 	private Socket socket;
 	private ObjectOutputStream out;
@@ -232,7 +293,7 @@ class FileReceiver extends Thread {
 	private String file;
 	private Message request;
 	private InetAddress serverIP;
-	private int serverPort;
+	private int masterPort;
 
 	public FileReceiver(InetAddress serverIP, int port, String file, 
 					  Message request) {
@@ -240,13 +301,13 @@ class FileReceiver extends Thread {
 			this.request = request;
 			this.file = file;
 			this.serverIP = serverIP;
-			this.serverPort = port;
+			this.masterPort = port;
 	}
 
 	public void run() {
 		try {
 			System.out.println("Antes de conectanos...");
-			this.socket.connect(new InetSocketAddress(this.serverIP, this.serverPort), 1000);
+			this.socket.connect(new InetSocketAddress(this.serverIP, this.masterPort), 1000);
 			this.in = new ObjectInputStream(this.socket.getInputStream());
 			this.out = new ObjectOutputStream(this.socket.getOutputStream());
 			this.din = new DataInputStream(this.socket.getInputStream());
@@ -292,13 +353,17 @@ class FileReceiver extends Thread {
 		}
 	}
 }
+*/
 
 class ClientTest {
 	public static void main(String[] args) {
 		try {
-			InetAddress master = InetAddress.getByName(args[0]);
+			InetAddress masterAddress = InetAddress.getByName(args[0]);
+			int masterPort = Integer.parseInt(args[0]);
+			int storagePort = Integer.parseInt(args[1]);
 			InetAddress myPublicIP = InetAddress.getByName(args[1]);
-			Client client = new Client(8888, master, myPublicIP);
+			Client client = new Client(masterAddress, masterPort, storagePort,
+									   myPublicIP);
 			Scanner sc = new Scanner(System.in);
 			String output;
 			String input;
