@@ -129,6 +129,7 @@ public class MulticastServer extends Thread {
 					// Si el archivo ya se encuentra en el mapa, se verifica
 					// si la version existe.
 					if (storedFiles.containsKey(msg.getFileName())) {
+						System.out.println("El archivo existe!");
 						boolean exist = false;
 						versionsList = this.storedFiles.get(msg.getFileName());
 						for (int i = 0; i < versionsList.size(); i++) {
@@ -138,6 +139,7 @@ public class MulticastServer extends Thread {
 							// en la lista de réplicas de la versión.
 							if (auxVersion.equals(msg.getVersion(), 
 												  msg.getRequester())) {
+								System.out.println("La version existe!");
 								auxVersion.addIP(msg.getSender());
 								exist = true;
 								break;
@@ -147,6 +149,7 @@ public class MulticastServer extends Thread {
 						// nueva versión y se añade al mapa en el archivo
 						// correspondiente.
 						if (!exist) {
+							System.out.println("La version no existe!");
 							auxVersion = new FileVersion(msg.getVersion(),
 														 msg.getFileSize(), 
 														 msg.getRequester());
@@ -158,6 +161,7 @@ public class MulticastServer extends Thread {
 					// versión y se añade una entrada al mapa cuya clave será
 					// el nombre del archivo almacenado.
 					else {
+						System.out.println("El archivo no existe!");
 						auxVersion = new FileVersion(msg.getVersion(),
 													 msg.getFileSize(), 
 													 msg.getRequester());

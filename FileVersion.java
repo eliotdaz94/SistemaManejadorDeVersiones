@@ -48,6 +48,6 @@ public class FileVersion {
 	}
 
 	public boolean equals(Timestamp timestamp, InetAddress client) {
-		return this.timestamp == timestamp && this.client == client;
+		return this.timestamp.equals(timestamp) && this.client.equals(client);
 	}
 }
