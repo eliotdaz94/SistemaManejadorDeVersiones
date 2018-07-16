@@ -203,9 +203,9 @@ class StorageServerWorker extends Thread {
 class StorageServerTest {
 	public static void main(String[] args) {
 		try {
-			int port = Integer.parseInt(args[1]);
-			int managementPort = Integer.parseInt(args[2]);
-			InetAddress address = InetAddress.getByName(args[3]);
+			int port = Integer.parseInt(args[0]);
+			int managementPort = Integer.parseInt(args[1]);
+			InetAddress address = InetAddress.getByName(args[2]);
 			StorageServer server = new StorageServer(port, managementPort, address);
 			System.out.println("Iniciando servidor.");
 			server.start();
