@@ -99,7 +99,6 @@ class StorageServerWorker extends Thread {
 			this.in = new ObjectInputStream(this.clientSocket.
 											getInputStream());
 			this.din = new DataInputStream(this.clientSocket.getInputStream());
-			this.dos = new DataOutputStream(this.clientSocket.getOutputStream());
 			this.multicast = multicast;
 		}
 		catch (IOException ioe) {
@@ -112,6 +111,7 @@ class StorageServerWorker extends Thread {
 
 	public void run() {
 		try {
+			this.dos = new DataOutputStream(this.clientSocket.getOutputStream());
 			System.out.println("Desde un hilo de almacenamiento...");
 			Message request = (Message)in.readObject();
 			System.out.println("Recibiendo " + request.getMessage() + " de " 
@@ -181,6 +181,7 @@ class StorageServerWorker extends Thread {
 					this.dos.write(buffer, 0, count);
 				}
 				fis.close();
+				dos.close();
 				System.out.println("Archivo enviado exitosamente!");
 				System.out.println();
 			}
