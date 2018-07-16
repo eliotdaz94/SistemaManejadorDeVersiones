@@ -273,9 +273,9 @@ public class MasterServer extends Thread {
 class MasterServerTest {
 	public static void main(String[] args) {
 		try {
-			int port = Integer.parseInt(args[1]);
-			InetAddress address = InetAddress.getByName(args[2]);
-			int tolerance = Integer.parseInt(args[3]);
+			int port = Integer.parseInt(args[0]);
+			InetAddress address = InetAddress.getByName(args[1]);
+			int tolerance = Integer.parseInt(args[2]);
 			MasterServer server = new MasterServer(port, address, tolerance);
 			System.out.println("Iniciando servidor.");
 			server.start();
@@ -287,6 +287,5 @@ class MasterServerTest {
 			System.out.println("UnknownHostException");
 			System.out.println(uhe);
 		}
-
 	}
 }
