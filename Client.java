@@ -359,9 +359,9 @@ class ClientTest {
 	public static void main(String[] args) {
 		try {
 			InetAddress masterAddress = InetAddress.getByName(args[0]);
-			int masterPort = Integer.parseInt(args[0]);
-			int storagePort = Integer.parseInt(args[1]);
-			InetAddress myPublicIP = InetAddress.getByName(args[1]);
+			int masterPort = Integer.parseInt(args[1]);
+			int storagePort = Integer.parseInt(args[2]);
+			InetAddress myPublicIP = InetAddress.getByName(args[3]);
 			Client client = new Client(masterAddress, masterPort, storagePort,
 									   myPublicIP);
 			Scanner sc = new Scanner(System.in);
