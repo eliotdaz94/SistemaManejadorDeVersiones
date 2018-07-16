@@ -37,7 +37,7 @@ public class MasterServer extends Thread {
 			this.socket = new ServerSocket(port);
 			this.isRunning = true;
 			this.serverBytes = new HashMap<InetAddress, Long>();
-			this.serverBytes.put(InetAddress.getLocalHost(), new Long(0));
+			this.serverBytes.put(this.myAddress, new Long(0));
 			this.gson = new Gson();
 			String dir = System.getProperty("user.dir");
 			System.out.println(dir);
@@ -171,25 +171,27 @@ public class MasterServer extends Thread {
 					long maxSize;
 					long auxValue;
 					for (InetAddress auxAddress : serverBytes.keySet()) {
-						auxValue = serverBytes.get(auxAddress);
-						if (i < tolerance) {
-							reply.addIP(auxAddress);
-							auxSizes.add(auxValue);
-							i++;
-						}
-						else {
-							//Buscas el maximo valor en auxSizes.
-							maxIndex = -1;
-							maxSize = Long.MIN_VALUE;
-							for (int j = 0; j < auxSizes.size(); j++) {
-								if (auxSizes.get(j) > maxSize) {
-									maxSize = auxSizes.get(j);
-									maxIndex = j;
-								}
+						if (!auxAddress.equals(myAddress)) {
+							auxValue = serverBytes.get(auxAddress);
+							if (i < tolerance) {
+								reply.addIP(auxAddress);
+								auxSizes.add(auxValue);
+								i++;
 							}
-							if (auxValue < maxSize) {
-								auxSizes.set(maxIndex, auxValue);
-								reply.replaceIP(maxIndex, auxAddress);
+							else {
+								//Buscas el maximo valor en auxSizes.
+								maxIndex = -1;
+								maxSize = Long.MIN_VALUE;
+								for (int j = 0; j < auxSizes.size(); j++) {
+									if (auxSizes.get(j) > maxSize) {
+										maxSize = auxSizes.get(j);
+										maxIndex = j;
+									}
+								}
+								if (auxValue < maxSize) {
+									auxSizes.set(maxIndex, auxValue);
+									reply.replaceIP(maxIndex, auxAddress);
+								}
 							}
 						}
 					}
