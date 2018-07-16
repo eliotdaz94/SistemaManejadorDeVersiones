@@ -36,7 +36,7 @@ public class StorageServer extends Thread {
 			this.isRunning = true;
 			this.storedFiles = new HashMap<String, ArrayList<FileVersion>>();
 			this.serverBytes = new HashMap<InetAddress, Long>();
-			this.serverBytes.put(InetAddress.getLocalHost(), new Long(0));
+			this.serverBytes.put(this.myAddress, new Long(0));
 			this.multicast = new MulticastServer(this.myAddress,
 												 this.storedFiles, 
 												 this.serverBytes);
