@@ -18,6 +18,7 @@ import java.sql.Timestamp;
 import java.net.InetSocketAddress;
 import java.net.SocketTimeoutException;
 import java.util.Arrays;
+import java.net.ConnectException;
 
 public class Client {
 
@@ -102,7 +103,7 @@ public class Client {
 			out.writeObject(request);
 			out.flush();
 
-			// Se espera por el mensaje de respuesta.
+			// Se espera por el mensaje de respuesta.le
 			Message reply = (Message)in.readObject();
 			if (reply.getMessage().equals("ACK")) {
 				System.out.println("Recibiendo " + reply.getMessage() + ":");
