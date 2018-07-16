@@ -30,25 +30,30 @@ public class Client {
 		try {
 			serverAddress = InetAddress.getLocalHost();
 			serverPort = port;
-			socket = new Socket(serverAddress, port);
-			out = new ObjectOutputStream(socket.getOutputStream());
-			in = new ObjectInputStream(socket.getInputStream());
+			//socket = new Socket();
+			//out = new ObjectOutputStream(socket.getOutputStream());
+			//in = new ObjectInputStream(socket.getInputStream());
 		}
 		catch (UnknownHostException uhe) {
 			System.out.println();
 			System.out.println("UnknownHostException");
 			System.out.println(uhe);
 		}
+		/*
 		catch (IOException ioe) {
 			System.out.println();
 			System.out.println("IOException");
 			System.out.println("Cannot create the input/output stream.");
 			ioe.printStackTrace();
 		}
+		*/
 	}
 	
 	public void commit(String pathName) {
 		try {
+			this.socket = new Socket(this.serverAddress, this.serverPort);
+			this.out = new ObjectOutputStream(socket.getOutputStream());
+			this.in = new ObjectInputStream(socket.getInputStream());
 			File file = new File(pathName);
 			Message request = new Message("commit");
 			request.setFileName(file.getName()); 
@@ -60,6 +65,7 @@ public class Client {
 			System.out.println("  " + request.getFileName());
 			System.out.println("  " + request.getFileSize());
 			System.out.println();
+			System.out.println(this.socket.isClosed());
 			out.writeObject(request);
 			out.flush();
 			
@@ -81,6 +87,7 @@ public class Client {
 				System.out.println("No hay ACK.");
 				System.out.println();
 			}
+			this.socket.close();
 		}
 		catch (IOException ioe) {
 			System.out.println();
@@ -97,6 +104,9 @@ public class Client {
 
 	public void checkout(String file) {
 		try {
+			this.socket = new Socket(this.serverAddress, this.serverPort);
+			this.out = new ObjectOutputStream(socket.getOutputStream());
+			this.in = new ObjectInputStream(socket.getInputStream());
 			Message request = new Message("checkout");
 			request.setFileName(file);
 			request.setRequester();
@@ -116,18 +126,24 @@ public class Client {
 				System.out.println("  " + reply.getIPs());
 				System.out.println();
 				for (InetAddress ip : reply.getIPs()) {
+					System.out.println(ip);
 					try {
 						reply.setMessage("checkout");
-						new FileReceiver(ip, 8889, reply.getFileName(), reply);
+						System.out.println(reply.getMessage());
+						(new FileReceiver(ip, 8889, reply.getFileName(), 
+										  reply)).start();
 						break;
 					}
-					catch (Exception e) {}
+					catch (Exception e) {
+						e.printStackTrace();
+					}
 				}
 			}
 			else if (reply.getMessage().equals("reject")) {
 				System.out.println("Recibiendo " + reply.getMessage() + ".");
 				System.out.println("El archivo solicitado no existe.");
 			}
+			this.socket.close();
 		}
 		catch (IOException ioe) {
 			System.out.println();
@@ -233,24 +249,21 @@ class FileReceiver extends Thread {
 
 	public FileReceiver(InetAddress serverIP, int port, String file, 
 					  Message request) {
-		try {
-			this.socket = new Socket(serverIP, port);
-			this.in = new ObjectInputStream(this.socket.getInputStream());
-			this.out = new ObjectOutputStream(this.socket.getOutputStream());
-			this.din = new DataInputStream(this.socket.getInputStream());
+			this.socket = new Socket();
 			this.request = request;
 			this.file = file;
 			this.serverIP = serverIP;
 			this.serverPort = port;
-		}
-		catch (IOException ioe) {
-			ioe.printStackTrace();
-		}
 	}
 
 	public void run() {
 		try {
+			System.out.println("Antes de conectanos...");
 			this.socket.connect(new InetSocketAddress(this.serverIP, this.serverPort), 1000);
+			this.in = new ObjectInputStream(this.socket.getInputStream());
+			this.out = new ObjectOutputStream(this.socket.getOutputStream());
+			this.din = new DataInputStream(this.socket.getInputStream());
+			System.out.println("Despues de conectanos...");
 			this.out.writeObject(this.request);
 			this.out.flush();
 
@@ -262,7 +275,7 @@ class FileReceiver extends Thread {
 			FileOutputStream fos = new FileOutputStream(reply.getFileName());
 			byte[] buffer = new byte[8192];
 			int count;
-			while((count = in.read(buffer)) > 0) {
+			while((count = din.read(buffer)) > 0) {
 				fos.write(buffer, 0, count);
 			}
 			fos.close();
@@ -273,10 +286,22 @@ class FileReceiver extends Thread {
 			this.socket.close();
 		}
 		catch (SocketTimeoutException ste) {
+			System.out.println();
+			System.out.println("SocketTimeoutException");
+			System.out.println(ste);
 			ste.printStackTrace();
 		}
-		catch (Exception e) {
-			e.printStackTrace();
+		catch (ClassNotFoundException cnfe) {
+			System.out.println();
+			System.out.println("ClassNotFoundException");
+			cnfe.printStackTrace();
+		}
+		catch (IOException ioe) {
+			System.out.println();
+			System.out.println("IOException");
+			System.out.println(ioe);
+			System.out.println("Error sending message.");
+			ioe.printStackTrace();
 		}
 	}
 }

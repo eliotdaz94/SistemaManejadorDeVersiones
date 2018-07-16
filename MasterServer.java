@@ -82,6 +82,7 @@ public class MasterServer extends Thread {
 			Socket clientSocket;
 			try {
 				clientSocket = socket.accept();
+
 				(new MasterServerWorker(clientSocket)).start();
 			} 
 			catch (IOException ioe) {
@@ -205,16 +206,26 @@ public class MasterServer extends Thread {
 						Message reply = new Message("ACK");
 						reply.setFileName(request.getFileName());
 						ArrayList<FileVersion> fileInfo = storedFiles.getOrDefault(request.getFileName(), new ArrayList<FileVersion>());
-						for (FileVersion fv : fileInfo) {
-							if (fv.getClient().equals(request.getRequester())) {
+						boolean clientExists = false;
+						for (int i = fileInfo.size() - 1; i >= 0; i--) {
+							if (fileInfo.get(i).getClient().equals(request.getRequester())) {
 								reply.createIPs();
-								for (InetAddress ip : fv.getReplicas()) {
+								for (InetAddress ip : fileInfo.get(i).getReplicas()) {
 									reply.addIP(ip);
 								}
-								reply.setFileSize(fv.getfileSize());
-								reply.setVersion(fv.getTimestamp());
+								reply.setFileSize(fileInfo.get(i).getfileSize());
+								reply.setVersion(fileInfo.get(i).getTimestamp());
+								clientExists = true;
 								break;
 							}
+						}
+						if (!clientExists) {
+							reply.createIPs();
+							for (InetAddress ip : fileInfo.get(fileInfo.size()-1).getReplicas()) {
+								reply.addIP(ip);
+							}
+							reply.setFileSize(fileInfo.get(fileInfo.size()-1).getfileSize());
+							reply.setVersion(fileInfo.get(fileInfo.size()-1).getTimestamp());
 						}
 						reply.setRequester();
 						
@@ -229,7 +240,7 @@ public class MasterServer extends Thread {
 					else {
 						// Enviamos el mensaje de vuelta.
 						Message reply = new Message("reject");
-						System.out.println("Enviando " + reply.getMessage() + ":");
+						System.out.println("Enviando " + reply.getMessage() + ".");
 						System.out.println();
 						out.writeObject(reply);
 						out.flush();
