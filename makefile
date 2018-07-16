@@ -4,15 +4,15 @@ make:
 	MulticastServer.java FileVersion.java
 
 runMaster:
-	java -cp ./gson-2.8.5.jar \
+	java -cp ./:./gson-2.8.5.jar \
 	MasterServerTest
 
 runStorage:
-	java -cp ./gson-2.8.5.jar \
+	java -cp ./:./gson-2.8.5.jar \
 	StorageServerTest
 
 runClient:
-	java -cp ./gson-2.8.5.jar \
+	java -cp ./:./gson-2.8.5.jar \
 	ClientTest
 
 rm:
