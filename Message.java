@@ -41,9 +41,9 @@ class Message implements Serializable {
 
 	public void setVersion() { this.version = new Timestamp(System.currentTimeMillis()); }
 
-	public void setRequester() { 
+	public void setRequester(InetAddress req) { 
 		try {
-			this.requester = InetAddress.getLocalHost(); 
+			this.requester = req; 
 		}
 		catch (UnknownHostException uhe) {
 			System.out.println();
@@ -52,9 +52,9 @@ class Message implements Serializable {
 		}
 	}
 
-	public void setSender() { 
+	public void setSender(InetAddress sndr) { 
 		try {
-			this.sender = InetAddress.getLocalHost(); 
+			this.sender = sndr; 
 		}
 		catch (UnknownHostException uhe) {
 			System.out.println();

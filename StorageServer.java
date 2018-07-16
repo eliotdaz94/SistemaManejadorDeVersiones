@@ -1,6 +1,7 @@
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.io.ObjectOutputStream;
 import java.io.ObjectInputStream;
 import java.io.DataInputStream;
@@ -10,22 +11,28 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.ArrayList;
+import java.lang.Integer;
 import java.lang.ClassNotFoundException;
 import java.sql.Timestamp;
 
 public class StorageServer extends Thread {
 
 	private int port;
+	private int managementPort;
+	private InetAddress myAddress;
 	private ServerSocket socket;
 	private boolean isRunning;
 	private HashMap<String, ArrayList<FileVersion>> storedFiles;
 	private HashMap<InetAddress, Long> serverBytes;
 	private MulticastServer multicast;
 
-	public StorageServer(int port){
+	public StorageServer(int port, int managementPort, InetAddress myAddress){
+
 		try {
 			this.port = port;
-			this.socket = new ServerSocket(port);
+			this.managementPort = managementPort;
+			this.myAddress = myAddress;
+			this.socket = new ServerSocket(this.port, 50, this.myAddress);
 			this.isRunning = true;
 			this.storedFiles = new HashMap<String, ArrayList<FileVersion>>();
 			this.serverBytes = new HashMap<InetAddress, Long>();
@@ -136,7 +143,7 @@ class StorageServerWorker extends Thread {
 				// almacenada.
 				Message notif = request; 
 				notif.setMessage("actualization");
-				notif.setSender();
+				notif.setSender(myAddress);
 				System.out.println("Enviando " + notif.getMessage() + ":");
 				System.out.println("  " + notif.getFileName());
 				System.out.println("  " + notif.getFileSize());
@@ -189,10 +196,20 @@ class StorageServerWorker extends Thread {
 
 class StorageServerTest {
 	public static void main(String[] args) {
-		StorageServer server = new StorageServer(8889);
-		System.out.println("Iniciando servidor.");
-		server.start();
-		System.out.println("Servidor iniciado.");
-		System.out.println();
+		try {
+			int port = Integer.parseInt(args[1]);
+			int managementPort = Integer.parseInt(args[2]);
+			InetAddress address = InetAddress.getByName(args[3]);
+			StorageServer server = new StorageServer(port, managementPort, address);
+			System.out.println("Iniciando servidor.");
+			server.start();
+			System.out.println("Servidor iniciado.");
+			System.out.println();
+		}
+		catch (UnknownHostException uhe) {
+			System.out.println();
+			System.out.println("UnknownHostException");
+			System.out.println(uhe);
+		}
 	}
 }

@@ -15,6 +15,7 @@ import java.lang.ClassNotFoundException;
 import com.google.gson.Gson;
 
 public class MulticastServer extends Thread {
+	private InetAddress myAddress;
 	private InetAddress group;
 	private int port;
 	private MulticastSocket socket;
@@ -29,9 +30,11 @@ public class MulticastServer extends Thread {
 	private Gson gson;
 	private String jsonFile;
 	
-	public MulticastServer(HashMap<String, ArrayList<FileVersion>> storedF,
+	public MulticastServer(InetAddress myAddress,
+						   HashMap<String, ArrayList<FileVersion>> storedF,
 						   HashMap<InetAddress, Long> serverB) {
 		try {
+			this.myAddress = myAddress;
 			this.group = InetAddress.getByName("228.5.6.7");
 			this.port = 6789;
 			this.socket = new MulticastSocket(this.port);
@@ -79,7 +82,7 @@ public class MulticastServer extends Thread {
 
 	public void register() {
 		Message msg = new Message("register");
-		msg.setRequester();
+		msg.setRequester(this.myAddress);
 		sendMessage(msg);
 	}
 

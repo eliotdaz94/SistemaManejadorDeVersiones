@@ -212,7 +212,7 @@ public class MasterServer extends Thread {
 								reply.createIPs();
 								for (InetAddress ip : fileInfo.get(i).getReplicas()) {
 									reply.addIP(ip);
-								}
+								}	
 								reply.setFileSize(fileInfo.get(i).getfileSize());
 								reply.setVersion(fileInfo.get(i).getTimestamp());
 								clientExists = true;
