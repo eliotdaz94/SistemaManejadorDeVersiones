@@ -10,6 +10,7 @@ class Message implements Serializable {
 	private long fileSize;
 	private Timestamp version;
 	private InetAddress requester;
+	private InetAddress sender;
 	private ArrayList<InetAddress> IPs;
 
 	public Message(String message) {
@@ -25,6 +26,8 @@ class Message implements Serializable {
 	public Timestamp getVersion() {return this.version; }
 
 	public InetAddress getRequester() { return this.requester; }
+
+	public InetAddress getSender() { return this.sender; }
 	
 	public ArrayList<InetAddress> getIPs() { return this.IPs; }
 
@@ -41,6 +44,17 @@ class Message implements Serializable {
 	public void setRequester() { 
 		try {
 			this.requester = InetAddress.getLocalHost(); 
+		}
+		catch (UnknownHostException uhe) {
+			System.out.println();
+			System.out.println("UnknownHostException");
+			System.out.println(uhe);
+		}
+	}
+
+	public void setSender() { 
+		try {
+			this.sender = InetAddress.getLocalHost(); 
 		}
 		catch (UnknownHostException uhe) {
 			System.out.println();

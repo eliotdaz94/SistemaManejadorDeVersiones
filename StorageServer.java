@@ -131,6 +131,7 @@ class StorageServerWorker extends Thread {
 				// almacenada.
 				Message notif = request; 
 				notif.setMessage("actualization");
+				notif.setSender();
 				System.out.println("Enviando " + notif.getMessage() + ":");
 				System.out.println("  " + notif.getFileName());
 				System.out.println("  " + notif.getFileSize());

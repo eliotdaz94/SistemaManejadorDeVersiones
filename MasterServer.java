@@ -187,16 +187,6 @@ public class MasterServer extends Thread {
 						}
 					}
 					System.out.println(serverBytes);
-					// Necesitamos hacer control de concurrencia.
-					for (InetAddress auxAddress : serverBytes.keySet()) {
-						if (reply.getIPs().contains(auxAddress)) {
-							auxValue = serverBytes.get(auxAddress);
-							serverBytes.replace(auxAddress, auxValue + 
-												request.getFileSize());
-						}
-					}
-					// Fin Seccion Critica
-					System.out.println(serverBytes);
 					System.out.println();
 					// Fin del balance de carga.
 					

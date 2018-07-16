@@ -120,6 +120,7 @@ public class MulticastServer extends Thread {
 					System.out.println("  " + msg.getFileSize());
 					System.out.println("  " + msg.getVersion());
 					System.out.println("  " + msg.getRequester());
+					System.out.println("  " + msg.getSender());
 					ArrayList<FileVersion> versionsList;
 					FileVersion auxVersion;
 					// Si el archivo ya se encuentra en el mapa, se verifica
@@ -134,8 +135,7 @@ public class MulticastServer extends Thread {
 							// en la lista de réplicas de la versión.
 							if (auxVersion.equals(msg.getVersion(), 
 												  msg.getRequester())) {
-								// No se si esto es correcto.
-								auxVersion.addIP(packet.getAddress());
+								auxVersion.addIP(msg.getSender());
 								exist = true;
 								break;
 							}
@@ -147,6 +147,7 @@ public class MulticastServer extends Thread {
 							auxVersion = new FileVersion(msg.getVersion(),
 														 msg.getFileSize(), 
 														 msg.getRequester());
+							auxVersion.addIP(msg.getSender());
 							versionsList.add(auxVersion);
 						} 
 					}
@@ -157,6 +158,7 @@ public class MulticastServer extends Thread {
 						auxVersion = new FileVersion(msg.getVersion(),
 													 msg.getFileSize(), 
 													 msg.getRequester());
+						auxVersion.addIP(msg.getSender());
 						versionsList = new ArrayList<FileVersion>();
 						versionsList.add(auxVersion);
 						storedFiles.put(msg.getFileName(), versionsList);
@@ -167,6 +169,16 @@ public class MulticastServer extends Thread {
     					gson.toJson(storedFiles, writer);
 					}
 					printStoredFiles();
+					// También se debe modificar el mapa de total de bytes
+					// almacenados por servidor.
+					for (InetAddress auxAddress : this.serverBytes.keySet()) {
+						if (auxAddress.equals(msg.getSender())) {
+							long auxValue = serverBytes.get(auxAddress);
+							this.serverBytes.replace(auxAddress, auxValue + 
+												 	 msg.getFileSize());
+						}
+					}
+					System.out.println(serverBytes);
 				}
 				else if (msg.getMessage().equals("register")) {
 					System.out.println("  " + msg.getRequester());
