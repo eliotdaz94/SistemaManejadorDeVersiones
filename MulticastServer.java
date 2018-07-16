@@ -127,7 +127,7 @@ public class MulticastServer extends Thread {
 					// si la version existe.
 					if (storedFiles.containsKey(msg.getFileName())) {
 						boolean exist = false;
-						versionsList = storedFiles.get(msg.getFileName());
+						versionsList = this.storedFiles.get(msg.getFileName());
 						for (int i = 0; i < versionsList.size(); i++) {
 							auxVersion = versionsList.get(i);
 							// En caso de que la version exista, solo se agrega

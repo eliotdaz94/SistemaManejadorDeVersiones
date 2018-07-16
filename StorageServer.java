@@ -129,7 +129,8 @@ class StorageServerWorker extends Thread {
 					fos.write(buffer, 0, count);
 				}
 				fos.close();
-				System.out.println("File created successfully!");
+				System.out.println("Archivo creado exitosamente!");
+				System.out.println();
 				
 				// Se notifica al resto de los servidores sobre la nueva versión 
 				// almacenada.
@@ -144,7 +145,9 @@ class StorageServerWorker extends Thread {
 				multicast.sendMessage(notif);
 			}
 			else if (request.getMessage().equals("checkout")) {
-				//System.out.println("Vamoa hacer un checkout.");
+				System.out.println("  " + request.getFileName());
+				System.out.println();
+
 				String[] parts = request.getFileName().split("(?=\\.)");
 				String newFileName = parts[0] + "%" + request.getVersion()
 									 + parts[1];
@@ -152,6 +155,7 @@ class StorageServerWorker extends Thread {
 				Message reply = new Message("ACK");
 				reply.setFileName(request.getFileName());
 				reply.setFileSize(request.getFileSize());
+
 				System.out.println("Enviando " + reply.getMessage() + ".");
 				System.out.println();
 				this.out.writeObject(reply);
@@ -164,10 +168,12 @@ class StorageServerWorker extends Thread {
 					this.dos.write(buffer, 0, count);
 				}
 				fis.close();
-				System.out.println("File sent successfully!");
+				System.out.println("Archivo enviado exitosamente!");
+				System.out.println();
 			}
 			else {
 				System.out.println("Mensaje erroneo.");
+				System.out.println();
 			}
 		}
 		catch (ClassNotFoundException cnfe) {

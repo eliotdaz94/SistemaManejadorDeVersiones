@@ -12,6 +12,7 @@ import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
+import java.util.Scanner;
 import java.lang.ClassNotFoundException;
 import java.sql.Timestamp;
 import java.net.InetSocketAddress;
@@ -54,7 +55,7 @@ public class Client {
 			request.setFileSize(file.length());
 			request.setRequester();
 			
-			// Se envia el mensaje de |.
+			// Se envia el mensaje de commit.
 			System.out.println("Enviando " + request.getMessage() + ":");
 			System.out.println("  " + request.getFileName());
 			System.out.println("  " + request.getFileSize());
@@ -65,19 +66,20 @@ public class Client {
 			// Se espera por el mensaje de respuesta.
 			Message reply = (Message)in.readObject();
 			System.out.println("Recibiendo " + reply.getMessage() + ":");
-			System.out.println("  " + reply.getVersion());
-			System.out.println("  " + reply.getIPs());
-			System.out.println();
 			if (reply.getMessage().equals("ACK")) {
+				System.out.println("  " + reply.getVersion());
+				System.out.println("  " + reply.getIPs());
+				System.out.println();
 				request.setVersion(reply.getVersion());
 				ArrayList<InetAddress> storageServers = reply.getIPs();
 				for (int i = 0; i < storageServers.size(); i++) {
 					new FileSender(storageServers.get(i), 8889, pathName,
-					 			   request).start();	
+								   request).start();	
 				}
 			}
 			else {
 				System.out.println("No hay ACK.");
+				System.out.println();
 			}
 		}
 		catch (IOException ioe) {
@@ -98,6 +100,7 @@ public class Client {
 			Message request = new Message("checkout");
 			request.setFileName(file);
 			request.setRequester();
+
 			// Se envia el mensaje de checkout.
 			System.out.println("Enviando " + request.getMessage() + ":");
 			System.out.println("  " + request.getFileName());
@@ -105,14 +108,13 @@ public class Client {
 			out.writeObject(request);
 			out.flush();
 
-			// Se espera por el mensaje de respuesta
+			// Se espera por el mensaje de respuesta.
 			Message reply = (Message)in.readObject();
-			System.out.println("Recibiendo " + reply.getMessage() + ":");
-			System.out.println("  " + reply.getVersion());
-			System.out.println("  " + reply.getIPs());
-			System.out.println();
-
 			if (reply.getMessage().equals("ACK")) {
+				System.out.println("Recibiendo " + reply.getMessage() + ":");
+				System.out.println("  " + reply.getVersion());
+				System.out.println("  " + reply.getIPs());
+				System.out.println();
 				for (InetAddress ip : reply.getIPs()) {
 					try {
 						reply.setMessage("checkout");
@@ -122,8 +124,9 @@ public class Client {
 					catch (Exception e) {}
 				}
 			}
-			else {
-				System.out.println("No hay ACK.");
+			else if (reply.getMessage().equals("reject")) {
+				System.out.println("Recibiendo " + reply.getMessage() + ".");
+				System.out.println("El archivo solicitado no existe.");
 			}
 		}
 		catch (IOException ioe) {
@@ -193,6 +196,10 @@ class FileSender extends Thread {
 			else {
 				System.out.println("No hay ACK.");
 			}
+			this.out.close();
+			this.dos.close();
+			this.in.close();
+			this.socket.close();
 		}
 		catch (FileNotFoundException fnfe) {
 			System.out.println();
@@ -260,6 +267,10 @@ class FileReceiver extends Thread {
 			}
 			fos.close();
 			System.out.println("File received successfully!");
+			this.out.close();
+			this.in.close();
+			this.din.close();
+			this.socket.close();
 		}
 		catch (SocketTimeoutException ste) {
 			ste.printStackTrace();
@@ -272,12 +283,38 @@ class FileReceiver extends Thread {
 
 class ClientTest {
 	public static void main(String[] args) {
-
+		Client client = new Client(8888);
+		Scanner sc = new Scanner(System.in);
+		String output;
+		String input;
+		while (true) {
+			input = sc.nextLine();
+			System.out.println();
+			String[] parts = input.split(" ");
+			if (parts[0].equals("commit")) {
+				File commitFile = new File(parts[1]);
+				if (commitFile.exists()) {
+					client.commit(parts[1]);
+				}
+				else {
+					System.out.println("Archivo no encontrado.");	
+				}
+			}
+			else if (parts[0].equals("checkout")) {
+				client.checkout(parts[1]);	
+			}
+			else {
+				System.out.println("Comando no válido. Uso:");
+				System.out.println("  commit pathName");
+				System.out.println("  checkout pathName");	
+			}
+			System.out.println();
+		}
+		/*
 		//String file = "/home/eliot/Documents/etiquetas.pdf";
 		String file = "/home/eliot/Documents/FormularioProyectodeGrado.odt";
-		Client client = new Client(8888);
 		client.commit(file);
-		client.checkout(file);
+		//client.checkout(file);
 		/*
 		try {
 			Client client = new Client(8888);
