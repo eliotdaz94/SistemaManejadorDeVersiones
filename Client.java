@@ -118,8 +118,9 @@ public class Client {
 										  reply)).start();
 						break;
 					}
-					catch (Exception e) {
-						e.printStackTrace();
+					catch (ConnectException ce) { 
+						System.out.println(ip + ' no disponible');
+						continue;
 					}
 				}
 			}
