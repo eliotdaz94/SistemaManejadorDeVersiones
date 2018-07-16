@@ -119,7 +119,7 @@ public class Client {
 						break;
 					}
 					catch (ConnectException ce) { 
-						System.out.println(ip + ' no disponible');
+						System.out.println(ip + " no disponible");
 						continue;
 					}
 				}
