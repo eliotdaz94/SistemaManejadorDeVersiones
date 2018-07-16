@@ -4,11 +4,16 @@ import java.net.Socket;
 import java.io.ObjectOutputStream;
 import java.io.ObjectInputStream;
 import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.ArrayList;
+import java.lang.reflect.Type;
 import java.lang.ClassNotFoundException;
 import java.sql.Timestamp;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+import com.google.gson.stream.JsonReader;
 
 public class MasterServer extends Thread {
 
@@ -19,6 +24,7 @@ public class MasterServer extends Thread {
 	private HashMap<String, ArrayList<FileVersion>> storedFiles;
 	private HashMap<InetAddress, Long> serverBytes;
 	private MulticastServer multicast;
+	private Gson gson;
 
 	public MasterServer(int tolerance, int port){
 		try {
@@ -26,19 +32,27 @@ public class MasterServer extends Thread {
 			this.port = port;
 			this.socket = new ServerSocket(port);
 			this.isRunning = true;
-			this.storedFiles = new HashMap<String, ArrayList<FileVersion>>();
 			this.serverBytes = new HashMap<InetAddress, Long>();
 			this.serverBytes.put(InetAddress.getLocalHost(), new Long(0));
+			this.gson = new Gson();
+			String dir = System.getProperty("user.dir");
+			System.out.println(dir);
+			String jsonFile = dir + "/storedFiles.json";
+			System.out.println(jsonFile);
+			Type storedFilesType = new TypeToken<HashMap<String, 
+									   ArrayList<FileVersion>>>() {}.getType();
+			FileReader fileR = new FileReader(jsonFile);
+			JsonReader jsonR = new JsonReader(fileR);
+			this.storedFiles = this.gson.fromJson(jsonR, storedFilesType);
+			System.out.println();
+			if (storedFiles == null) {
+				System.out.println("Cargando mapa nulo.");
+				this.storedFiles = new HashMap<String, ArrayList<FileVersion>>();				
+			}
+			printStoredFiles();
 			this.multicast = new MulticastServer(storedFiles, serverBytes);
 			this.multicast.start();
 			
-			/*		
-			Message test = new Message("multicast");
-			test.setFileName("prueba"); 
-			test.setFileSize(new Long(150));
-			multicast.sendMessage(test);
-			*/
-
 			// Datos de prueba.
 			ArrayList<FileVersion> testArray = new ArrayList<FileVersion>();
 			InetAddress testIP = InetAddress.getByName("159.90.8.140");
@@ -116,7 +130,7 @@ public class MasterServer extends Thread {
 			try {
 				this.clientSocket = clientSocket;
 				this.out = new ObjectOutputStream(this.clientSocket.
-											 	  getOutputStream());
+												  getOutputStream());
 				this.in = new ObjectInputStream(this.clientSocket.
 												getInputStream());
 			}

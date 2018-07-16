@@ -6,10 +6,13 @@ import java.io.ByteArrayOutputStream;
 import java.io.ByteArrayInputStream;
 import java.io.ObjectOutputStream;
 import java.io.ObjectInputStream;
+import java.io.Writer;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.ArrayList;
 import java.lang.ClassNotFoundException;
+import com.google.gson.Gson;
 
 public class MulticastServer extends Thread {
 	private InetAddress group;
@@ -23,6 +26,8 @@ public class MulticastServer extends Thread {
 	private ObjectInputStream is;
 	private HashMap<String, ArrayList<FileVersion>> storedFiles;
 	private HashMap<InetAddress, Long> serverBytes;
+	private Gson gson;
+	private String jsonFile;
 	
 	public MulticastServer(HashMap<String, ArrayList<FileVersion>> storedF,
 						   HashMap<InetAddress, Long> serverB) {
@@ -36,6 +41,7 @@ public class MulticastServer extends Thread {
 			this.os = new ObjectOutputStream(this.outByteStream);
 			this.storedFiles = storedF;
 			this.serverBytes = serverB;
+			this.jsonFile = System.getProperty("user.dir") + "/storedFiles.json";
 		} 
 		catch (UnknownHostException uhe) {
 			System.out.println();
@@ -56,7 +62,6 @@ public class MulticastServer extends Thread {
 			this.os = new ObjectOutputStream(this.outByteStream);
 			this.os.writeObject(msg);
 			this.os.flush();
-			System.out.println(msg.getMessage());
 			// Retrieves byte array.
 			this.sendBuf = this.outByteStream.toByteArray();
 			DatagramPacket packet = new DatagramPacket(this.sendBuf, 
@@ -157,6 +162,10 @@ public class MulticastServer extends Thread {
 						storedFiles.put(msg.getFileName(), versionsList);
 					}
 					System.out.println();
+					try (Writer writer = new FileWriter(this.jsonFile)) {
+    					Gson gson = new Gson();
+    					gson.toJson(storedFiles, writer);
+					}
 					printStoredFiles();
 				}
 				else if (msg.getMessage().equals("register")) {
