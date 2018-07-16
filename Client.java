@@ -29,27 +29,9 @@ public class Client {
 	private ObjectInputStream in;
 
 	public Client(int port, InetAddress serverAddress, InetAddress clientPublicIP) {	
-		try {
 			this.serverAddress =  serverAddress;
 			this.clientPublicIP = clientPublicIP;
 			this.serverPort = port;
-			this.socket = new Socket(serverAddress, port);
-			this.out = new ObjectOutputStream(socket.getOutputStream());
-			this.in = new ObjectInputStream(socket.getInputStream());
-		}
-		catch (UnknownHostException uhe) {
-			System.out.println();
-			System.out.println("UnknownHostException");
-			System.out.println(uhe);
-		}
-		/*
-		catch (IOException ioe) {
-			System.out.println();
-			System.out.println("IOException");
-			System.out.println("Cannot create the input/output stream.");
-			ioe.printStackTrace();
-		}
-		*/
 	}
 	
 	public void commit(String pathName) {
@@ -61,7 +43,7 @@ public class Client {
 			Message request = new Message("commit");
 			request.setFileName(file.getName()); 
 			request.setFileSize(file.length());
-			request.setRequester();
+			request.setRequester(this.clientPublicIP);
 			
 			// Se envia el mensaje de commit.
 			System.out.println("Enviando " + request.getMessage() + ":");
@@ -111,7 +93,7 @@ public class Client {
 			this.in = new ObjectInputStream(socket.getInputStream());
 			Message request = new Message("checkout");
 			request.setFileName(file);
-			request.setRequester();
+			request.setRequester(this.clientPublicIP);
 
 			// Se envia el mensaje de checkout.
 			System.out.println("Enviando " + request.getMessage() + ":");

@@ -1,6 +1,7 @@
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.UnknownHostException;
 import java.io.ObjectOutputStream;
 import java.io.ObjectInputStream;
 import java.io.FileOutputStream;
@@ -8,6 +9,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.ArrayList;
+import java.lang.Integer;
 import java.lang.reflect.Type;
 import java.lang.ClassNotFoundException;
 import java.sql.Timestamp;
@@ -18,6 +20,7 @@ import com.google.gson.stream.JsonReader;
 public class MasterServer extends Thread {
 
 	private int tolerance;
+	private InetAddress myAddress;
 	private int port;
 	private ServerSocket socket;
 	private boolean isRunning;
@@ -26,9 +29,10 @@ public class MasterServer extends Thread {
 	private MulticastServer multicast;
 	private Gson gson;
 
-	public MasterServer(int tolerance, int port){
+	public MasterServer(int port, InetAddress myAddress, int tolerance) {
 		try {
 			this.tolerance = tolerance + 1;
+			this.myAddress = myAddress;
 			this.port = port;
 			this.socket = new ServerSocket(port);
 			this.isRunning = true;
@@ -50,7 +54,9 @@ public class MasterServer extends Thread {
 				this.storedFiles = new HashMap<String, ArrayList<FileVersion>>();				
 			}
 			printStoredFiles();
-			this.multicast = new MulticastServer(storedFiles, serverBytes);
+			this.multicast = new MulticastServer(this.myAddress,
+												 this.storedFiles, 
+												 this.serverBytes);
 			this.multicast.start();
 			
 			// Datos de prueba.
@@ -227,7 +233,7 @@ public class MasterServer extends Thread {
 							reply.setFileSize(fileInfo.get(fileInfo.size()-1).getfileSize());
 							reply.setVersion(fileInfo.get(fileInfo.size()-1).getTimestamp());
 						}
-						reply.setRequester();
+						reply.setRequester(myAddress);
 						
 						// Enviamos el mensaje de vuelta.
 						System.out.println("Enviando " + reply.getMessage() + ":");
@@ -266,10 +272,21 @@ public class MasterServer extends Thread {
 
 class MasterServerTest {
 	public static void main(String[] args) {
-		MasterServer server = new MasterServer(0, 8888);
-		System.out.println("Iniciando servidor.");
-		server.start();
-		System.out.println("Servidor iniciado.");
-		System.out.println();
+		try {
+			int port = Integer.parseInt(args[1]);
+			InetAddress address = InetAddress.getByName(args[2]);
+			int tolerance = Integer.parseInt(args[3]);
+			MasterServer server = new MasterServer(port, address, tolerance);
+			System.out.println("Iniciando servidor.");
+			server.start();
+			System.out.println("Servidor iniciado.");
+			System.out.println();
+		}
+		catch (UnknownHostException uhe) {
+			System.out.println();
+			System.out.println("UnknownHostException");
+			System.out.println(uhe);
+		}
+
 	}
 }

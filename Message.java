@@ -41,27 +41,9 @@ class Message implements Serializable {
 
 	public void setVersion() { this.version = new Timestamp(System.currentTimeMillis()); }
 
-	public void setRequester(InetAddress req) { 
-		try {
-			this.requester = req; 
-		}
-		catch (UnknownHostException uhe) {
-			System.out.println();
-			System.out.println("UnknownHostException");
-			System.out.println(uhe);
-		}
-	}
+	public void setRequester(InetAddress req) { this.requester = req; }
 
-	public void setSender(InetAddress sndr) { 
-		try {
-			this.sender = sndr; 
-		}
-		catch (UnknownHostException uhe) {
-			System.out.println();
-			System.out.println("UnknownHostException");
-			System.out.println(uhe);
-		}
-	}
+	public void setSender(InetAddress sndr) { this.sender = sndr; } 
 	
 	public void createIPs() { this.IPs = new ArrayList<InetAddress>(); }
 

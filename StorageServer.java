@@ -37,7 +37,9 @@ public class StorageServer extends Thread {
 			this.storedFiles = new HashMap<String, ArrayList<FileVersion>>();
 			this.serverBytes = new HashMap<InetAddress, Long>();
 			this.serverBytes.put(InetAddress.getLocalHost(), new Long(0));
-			this.multicast = new MulticastServer(storedFiles, serverBytes);
+			this.multicast = new MulticastServer(this.myAddress,
+												 this.storedFiles, 
+												 this.serverBytes);
 			this.multicast.start();
 			this.multicast.register();
 		}
@@ -54,7 +56,8 @@ public class StorageServer extends Thread {
 			Socket clientSocket;
 			try {
 				clientSocket = this.socket.accept();
-				(new StorageServerWorker(clientSocket, multicast)).start();
+				(new StorageServerWorker(this.myAddress, clientSocket, 
+										 this.multicast)).start();
 			} 
 			catch (IOException ioe) {
 				System.out.println();
@@ -78,6 +81,7 @@ public class StorageServer extends Thread {
 
 class StorageServerWorker extends Thread {
 	
+	private InetAddress myAddress;
 	private Socket clientSocket;
 	private ObjectOutputStream out;
 	private ObjectInputStream in;
@@ -85,8 +89,10 @@ class StorageServerWorker extends Thread {
 	private DataOutputStream dos;
 	private MulticastServer multicast;
 
-	public StorageServerWorker(Socket clientSocket, MulticastServer multicast) {
+	public StorageServerWorker(InetAddress myAddress, Socket clientSocket,
+							   MulticastServer multicast) {
 		try {
+			this.myAddress = myAddress;
 			this.clientSocket = clientSocket;
 			this.out = new ObjectOutputStream(this.clientSocket.
 											  getOutputStream());
