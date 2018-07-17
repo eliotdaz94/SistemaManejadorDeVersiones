@@ -133,7 +133,6 @@ public class Client {
 				System.out.println("Recibiendo " + reply.getMessage() + ".");
 				System.out.println("El archivo solicitado no existe.");
 			}
-			System.out.println("Yo ya telminé.");
 			this.socket.close();
 		}
 		catch (IOException ioe) {
@@ -151,10 +150,9 @@ public class Client {
 
 	public void fileReceiver(InetAddress serverIP, int port, String file,
 							 Message request) throws SocketTimeoutException,
-							 						 ClassNotFoundException, 
+							 						 ClassNotFoundException 
 													 IOException {
 		try {
-			System.out.println("Antes de conectanos...");
 			Socket storageSocket = new Socket(serverIP, port);
 			ObjectInputStream in = new ObjectInputStream(storageSocket.
 														 getInputStream());
@@ -162,7 +160,6 @@ public class Client {
 															getOutputStream());
 			DataInputStream din = new DataInputStream(storageSocket.
 													  getInputStream());
-			System.out.println("Despues de conectanos...");
 			out.writeObject(request);
 			out.flush();
 
@@ -178,7 +175,7 @@ public class Client {
 				fos.write(buffer, 0, count);
 			}
 			fos.close();
-			System.out.println("File received successfully!");
+			System.out.println("Archivo recibido exitosamente!");
 			out.close();
 			in.close();
 			din.close();
@@ -288,77 +285,6 @@ class FileSender extends Thread {
 	}
 }
 
-/*
-class FileReceiver extends Thread {
-	private Socket socket;
-	private ObjectOutputStream out;
-	private ObjectInputStream in;
-	private DataInputStream din;
-	private String file;
-	private Message request;
-	private InetAddress serverIP;
-	private int masterPort;
-
-	public FileReceiver(InetAddress serverIP, int port, String file, 
-					  Message request) {
-			this.socket = new Socket();
-			this.request = request;
-			this.file = file;
-			this.serverIP = serverIP;
-			this.masterPort = port;
-	}
-
-	public void run() {
-		try {
-			System.out.println("Antes de conectanos...");
-			this.socket.connect(new InetSocketAddress(this.serverIP, this.masterPort), 1000);
-			this.in = new ObjectInputStream(this.socket.getInputStream());
-			this.out = new ObjectOutputStream(this.socket.getOutputStream());
-			this.din = new DataInputStream(this.socket.getInputStream());
-			System.out.println("Despues de conectanos...");
-			this.out.writeObject(this.request);
-			this.out.flush();
-
-			// Se espera por el mensaje de respuesta.
-			Message reply = (Message)this.in.readObject();
-			System.out.println("Recibiendo " + reply.getMessage() + ".");
-			System.out.println();
-
-			FileOutputStream fos = new FileOutputStream(reply.getFileName());
-			byte[] buffer = new byte[8192];
-			int count;
-			while((count = din.read(buffer)) > 0) {
-				fos.write(buffer, 0, count);
-			}
-			fos.close();
-			System.out.println("File received successfully!");
-			this.out.close();
-			this.in.close();
-			this.din.close();
-			this.socket.close();
-		}
-		catch (SocketTimeoutException ste) {
-			System.out.println();
-			System.out.println("SocketTimeoutException");
-			System.out.println(ste);
-			ste.printStackTrace();
-		}
-		catch (ClassNotFoundException cnfe) {
-			System.out.println();
-			System.out.println("ClassNotFoundException");
-			cnfe.printStackTrace();
-		}
-		catch (IOException ioe) {
-			System.out.println();
-			System.out.println("IOException");
-			System.out.println(ioe);
-			System.out.println("Error sending message.");
-			ioe.printStackTrace();
-		}
-	}
-}
-*/
-
 class ClientTest {
 	public static void main(String[] args) {
 		try {
@@ -398,26 +324,5 @@ class ClientTest {
 		catch (UnknownHostException uhe) {
 			uhe.printStackTrace();
 		}
-		/*
-		//String file = "/home/eliot/Documents/etiquetas.pdf";
-		String file = "/home/eliot/Documents/FormularioProyectodeGrado.odt";
-		client.commit(file);
-		//client.checkout(file);
-		/*
-		try {
-			Client client = new Client(8888);
-			client.commit(file);
-		
-			// el master responde con la lista de ips
-
-			//FileSender fs = new FileSender(InetAddress.getByName("127.0.0.1"), 2307, file, new Timestamp(System.currentTimeMillis()));
-			//fs.start();
-		}
-		catch (IOException ioe) {
-			System.out.println();
-			System.out.println("IOException");
-			System.out.println(ioe);
-		}
-		*/
 	}
 }

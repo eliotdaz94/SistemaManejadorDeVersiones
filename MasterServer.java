@@ -58,22 +58,6 @@ public class MasterServer extends Thread {
 												 this.storedFiles, 
 												 this.serverBytes);
 			this.multicast.start();
-			
-			// Datos de prueba.
-			ArrayList<FileVersion> testArray = new ArrayList<FileVersion>();
-			InetAddress testIP = InetAddress.getByName("159.90.8.140");
-			FileVersion testFileVersion = new FileVersion(new Timestamp(System.currentTimeMillis()), 200, testIP);
-			testFileVersion.addIP(InetAddress.getByName("159.95.8.150"));
-			testFileVersion.addIP(InetAddress.getByName("159.95.8.160"));
-			testFileVersion.addIP(InetAddress.getByName("159.95.8.180"));
-			testArray.add(testFileVersion);
-			storedFiles.put("HarryPotter",testArray);
-			//serverBytes.put(InetAddress.getLocalHost(), new Long(0));
-			//serverBytes.put(InetAddress.getByName("159.95.8.100"), new Long(10));
-			//serverBytes.put(InetAddress.getByName("159.95.8.110"), new Long(40));
-			//serverBytes.put(InetAddress.getByName("159.95.8.120"), new Long(20));
-			//serverBytes.put(InetAddress.getByName("159.95.8.130"), new Long(30));
-			//serverBytes.put(InetAddress.getByName("159.95.8.140"), new Long(145));
 		}
 		catch (IOException ioe) {
 			System.out.println();
