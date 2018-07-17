@@ -150,7 +150,7 @@ public class Client {
 
 	public void fileReceiver(InetAddress serverIP, int port, String file,
 							 Message request) throws SocketTimeoutException,
-							 						 ClassNotFoundException 
+							 						 ClassNotFoundException, 
 													 IOException {
 		try {
 			Socket storageSocket = new Socket(serverIP, port);
