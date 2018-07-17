@@ -150,7 +150,9 @@ public class Client {
 	}
 
 	public void fileReceiver(InetAddress serverIP, int port, String file,
-							 Message request) {
+							 Message request) throws SocketTimeoutException,
+							 						 ClassNotFoundException, 
+													 IOException {
 		try {
 			System.out.println("Antes de conectanos...");
 			Socket storageSocket = new Socket(serverIP, port);
@@ -187,6 +189,7 @@ public class Client {
 			System.out.println("SocketTimeoutException");
 			System.out.println(ste);
 			ste.printStackTrace();
+			throw ste;
 		}
 		catch (ClassNotFoundException cnfe) {
 			System.out.println();
@@ -199,6 +202,7 @@ public class Client {
 			System.out.println(ioe);
 			System.out.println("Error sending message.");
 			ioe.printStackTrace();
+			throw ioe;
 		}
 	}
 }
